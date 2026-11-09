@@ -15,7 +15,7 @@
       --card-hover-border: #0284c7;
       --ocean-blue: #0284c7;
       --ocean-dark: #0369a1;
-      --ocean-glow: rgba(2, 132, 199, 0.15);
+      --ocean-glow: rgba(2, 132, 199, 0.12);
       --text-main: #0f172a;
       --text-muted: #475569;
       --text-subtle: #64748b;
@@ -214,14 +214,23 @@
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
       line-height: 1.5;
     }
+    .summary:empty { display: none; }
 
-    /* Vertical Card List Styling */
+    /* Vertical & Juxtaposed Layout Styling */
     .vertical-list {
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
       width: 100%;
     }
+    .juxtaposed-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 1.25rem;
+      width: 100%;
+    }
+    @media (max-width: 680px) { .juxtaposed-grid { grid-template-columns: 1fr; } }
+
     .back-btn {
       background: transparent;
       border: none;
@@ -280,36 +289,107 @@
       font-size: 1.2rem;
     }
 
+    /* Executive Contact Section Styling */
+    .contact-section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ocean-dark);
+      margin: 1.25rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .contact-section-title:first-of-type {
+      margin-top: 0.5rem;
+    }
+    .contact-section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
     .contact-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 1rem;
-      margin-top: 0.75rem;
     }
-    .contact-item {
+    .contact-card {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      padding: 1rem 1.25rem;
-      border-radius: 12px;
+      padding: 1.25rem;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+    }
+    .contact-card:hover {
+      background: #ffffff;
+      border-color: var(--ocean-blue);
+      box-shadow: 0 6px 16px var(--ocean-glow);
+      transform: translateY(-2px);
+    }
+    .contact-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .contact-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(2, 132, 199, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ocean-blue);
+      flex-shrink: 0;
+    }
+    .contact-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+    .contact-meta {
+      display: flex;
+      flex-direction: column;
     }
     .contact-label {
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: var(--text-subtle);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      display: block;
-      margin-bottom: 0.25rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text-main);
     }
-    .contact-email {
+    .contact-subtext {
+      font-size: 0.78rem;
+      color: var(--text-subtle);
+    }
+    .contact-action-btn {
+      margin-top: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
       color: var(--ocean-blue);
       text-decoration: none;
-      font-size: 0.95rem;
-      font-weight: 500;
-      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.5rem 0.75rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.2s ease;
     }
-    .contact-email:hover {
-      text-decoration: underline;
+    .contact-card:hover .contact-action-btn {
+      background: var(--ocean-blue);
+      color: #ffffff;
+      border-color: var(--ocean-blue);
+    }
+    .contact-action-btn span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
     }
   </style>
 </head>
@@ -355,7 +435,7 @@
       </div>
     </div>
 
-    <div class="summary" id="sum">Click <strong>"Run Diagnostic"</strong> to sample live network performance.</div>
+    <div class="summary" id="sum"></div>
 
     <!-- Dive Inside Button -->
     <button class="dive-btn" id="diveBtn">Dive Inside &rarr;</button>
@@ -366,37 +446,106 @@
     <button class="back-btn" id="backBtn">&larr; Back to Diagnostics</button>
 
     <div class="vertical-list">
-      <!-- 1. Description -->
-      <div class="list-card">
-        <h3>1. Description</h3>
-        <p>
-          Access exclusive catalog of Ideations, Blueprints , Design, Business Assets & Technology integrations to conduct market benchmarks and finalize procurement bids. Our Platform spans the horizon of modern innovation: AI, Quantum Systems, Networking, High-Performance Computing, and Astro technologies. Tap an early valuation and integration of cutting edge technologies.
-        </p>
-      </div>
-
-      <!-- 2. Services -->
-      <div class="list-card">
-        <h3>2. Services</h3>
-        <ul class="sub-list">
-          <li>Business Consulting</li>
-          <li>AI Operability</li>
-        </ul>
-      </div>
-
-      <!-- 3. Contacts -->
-      <div class="list-card">
-        <h3>Contacts</h3>
-        <div class="contact-grid">
-          <div class="contact-item">
-            <span class="contact-label">Pre Engagement</span>
-            <a href="mailto:info@pseudobid.com" class="contact-email">info@pseudobid.com</a>
-          </div>
-
-          <div class="contact-item">
-            <span class="contact-label">AI Optimization</span>
-            <a href="mailto:info@heurists.com" class="contact-email">info@heurists.com</a>
-          </div>
+      <!-- Juxtaposed Description & Services Container -->
+      <div class="juxtaposed-grid">
+        <!-- Description Card -->
+        <div class="list-card">
+          <h3>Description</h3>
+          <p>
+            Access exclusive catalog of Ideations, Blueprints , Design, Business Assets & Technology integrations to conduct market benchmarks and finalize procurement bids. Our Platform spans the horizon of modern innovation: AI, Quantum Systems, Networking, High-Performance Computing, and Astro technologies. Tap an early valuation and integration of cutting edge technologies.
+          </p>
         </div>
+
+        <!-- Services Card -->
+        <div class="list-card">
+          <h3>Services</h3>
+          <ul class="sub-list">
+            <li>Business Consulting</li>
+            <li>AI Operability</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Contacts & Subscriptions -->
+      <div class="list-card">
+        <h3>Enterprise Touchpoints</h3>
+
+        <!-- Direct Inquiries Section -->
+        <div class="contact-section-title">Direct Inquiries</div>
+        <div class="contact-grid">
+          
+          <div class="contact-card">
+            <div class="contact-card-header">
+              <div class="contact-icon">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+              </div>
+              <div class="contact-meta">
+                <span class="contact-label">Pre Engagement</span>
+                <span class="contact-subtext">Procurement & Benchmarking</span>
+              </div>
+            </div>
+            <a href="mailto:info@pseudobid.com" class="contact-action-btn">
+              <span>info@pseudobid.com</span>
+              &rarr;
+            </a>
+          </div>
+
+          <div class="contact-card">
+            <div class="contact-card-header">
+              <div class="contact-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              </div>
+              <div class="contact-meta">
+                <span class="contact-label">AI Optimization</span>
+                <span class="contact-subtext">Technical Integration</span>
+              </div>
+            </div>
+            <a href="mailto:info@heurists.com" class="contact-action-btn">
+              <span>info@heurists.com</span>
+              &rarr;
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Community & Insights Section -->
+        <div class="contact-section-title">Community & Strategic Insights</div>
+        <div class="contact-grid">
+          
+          <div class="contact-card">
+            <div class="contact-card-header">
+              <div class="contact-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.25V10.9H6.46M7.86 6.77a1.62 1.62 0 1 0 0 3.24 1.62 1.62 0 0 0 0-3.24z"/></svg>
+              </div>
+              <div class="contact-meta">
+                <span class="contact-label">Community Group</span>
+                <span class="contact-subtext">LinkedIn Professional Forum</span>
+              </div>
+            </div>
+            <a href="https://www.linkedin.com/groups/18350025/" target="_blank" rel="noopener noreferrer" class="contact-action-btn">
+              Join Group
+              &rarr;
+            </a>
+          </div>
+
+          <div class="contact-card">
+            <div class="contact-card-header">
+              <div class="contact-icon">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 14H5c-.55 0-1-.45-1-1V8l8 5 8-5v9c0 .55-.45 1-1 1zM12 11L4 6h16l-8 5z"/></svg>
+              </div>
+              <div class="contact-meta">
+                <span class="contact-label">Official Newsletter</span>
+                <span class="contact-subtext">LinkedIn Regular Edition</span>
+              </div>
+            </div>
+            <a href="https://www.linkedin.com/newsletters/pseudobid-7438151101113327616" target="_blank" rel="noopener noreferrer" class="contact-action-btn">
+              Subscribe
+              &rarr;
+            </a>
+          </div>
+
+        </div>
+
       </div>
     </div>
   </section>
