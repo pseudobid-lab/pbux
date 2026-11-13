@@ -1,0 +1,2865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autodrive</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js r128 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    /* Custom subtle scrollbars for telemetry pane */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0284c7;
+    }
+
+    /* Clean Daylight Telemetry HUD Panels */
+    .hud-panel {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 250, 252, 0.99) 100%);
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .hud-subcard {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    @keyframes blinkSignal {
+      0%, 49% { opacity: 1; box-shadow: 0 0 10px rgba(245, 158, 11, 0.65); }
+      50%, 100% { opacity: 0.35; box-shadow: none; }
+    }
+    .blinker-active {
+      animation: blinkSignal 0.7s infinite;
+    }
+
+    /* Custom Range Input for Steering Wheel */
+    input[type=range].steer-slider {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range].steer-slider::-webkit-slider-runnable-track {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+    }
+    input[type=range].steer-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: pointer;
+      margin-top: -7px;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col">
+
+  <!-- TOP TELEMETRY STATUS BAR -->
+  <header class="h-12 px-4 border-b border-slate-300 bg-white flex items-center justify-between shrink-0 z-20 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-2.5 h-2.5 rounded-full bg-sky-600 animate-pulse"></div>
+      <span class="font-mono font-bold tracking-wider text-sm sm:text-base text-slate-900">AERO-DRIVE // 3D TELEMETRY</span>
+      <span class="hidden xl:inline-block text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-300">SYS: 60Hz IMU + 12-SONAR + 8-CAM</span>
+    </div>
+
+    <div class="flex items-center gap-2 sm:gap-3 text-xs font-mono">
+      <div class="hidden sm:flex items-center gap-2 bg-slate-100 px-2.5 py-1 rounded border border-slate-300">
+        <span class="text-slate-500">SIM TIME:</span>
+        <span id="hud-sim-time" class="text-slate-900 font-bold">00:00.0</span>
+      </div>
+      <!-- Slow Motion Speed Slider Control -->
+      <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded border border-slate-300">
+        <span class="text-slate-500 text-[10px]">SPEED:</span>
+        <input id="slider-slowmo" type="range" min="0.1" max="1.0" step="0.05" value="1.0" class="w-20 accent-sky-600 cursor-pointer" />
+        <span id="val-slowmo" class="text-sky-700 font-bold text-[10px] w-8">1.0x</span>
+      </div>
+      <button id="btn-grid-toggle" class="px-2.5 py-1 rounded font-semibold transition-all flex items-center gap-1.5 bg-sky-50 text-sky-700 border border-sky-300 hover:bg-sky-100" title="Toggle 3D Coordinate Grid Overlay">
+        <span>GRID: ON</span>
+      </button>
+      <button id="btn-autopilot" class="px-3 py-1 rounded font-semibold transition-all flex items-center gap-1.5 bg-sky-600 text-white border border-sky-700 shadow-sm hover:bg-sky-700">
+        <span id="autopilot-dot" class="w-2 h-2 rounded-full bg-white"></span>
+        <span id="autopilot-label">AUTOPILOT: ON</span>
+      </button>
+      <button id="btn-reset-pos" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-semibold transition" title="Reset Vehicle to Origin (0,0,0)">
+        RESET (0,0,0)
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN 3-PANE WORKSPACE -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 lg:overflow-hidden">
+
+    <!-- ===================================================================== -->
+    <!-- LEFT PANE: VIRTUAL SENSORS (GYRO, ACCEL, SONAR, 8 CORNER CAMERAS)     -->
+    <!-- ===================================================================== -->
+    <section class="lg:col-span-3 hud-panel rounded-xl p-2.5 flex flex-col gap-2.5 lg:h-full lg:overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+        <h2 class="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+          Virtual IMU & Vision Array
+        </h2>
+        <span class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-300">ACTIVE</span>
+      </div>
+
+      <!-- IMU ROW: 9-AXIS FEED + ACCELEROMETER -->
+      <div class="grid grid-cols-2 gap-2">
+        <!-- 9-Axis IMU Feed Card -->
+        <div class="hud-subcard rounded-lg p-2 flex flex-col items-center">
+          <div class="w-full flex justify-between items-center mb-1">
+            <span class="text-[10px] font-mono font-bold text-slate-600 uppercase">9-Axis IMU Feed</span>
+            <span class="text-[9px] font-mono text-sky-700 font-semibold">ACC·GYRO·MAG</span>
+          </div>
+          <canvas id="canvas-gyro" class="w-28 h-28 rounded-full border border-slate-300 bg-white shadow-inner"></canvas>
+          <div class="w-full mt-2 space-y-1 text-[10px] font-mono">
+            <div class="flex justify-between">
+              <span class="text-slate-500">PITCH:</span>
+              <span id="val-pitch" class="text-sky-700 font-bold">+0.0° (0.00)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">ROLL:</span>
+              <span id="val-roll" class="text-amber-700 font-bold">+0.0° (0.00)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">YAW/MAG:</span>
+              <span id="val-yaw" class="text-emerald-700 font-bold">000.0° (Mag)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Virtual Accelerometer Card -->
+        <div class="hud-subcard rounded-lg p-2 flex flex-col items-center">
+          <div class="w-full flex justify-between items-center mb-1">
+            <span class="text-[10px] font-mono font-bold text-slate-600 uppercase">Accelerometer</span>
+            <span id="val-total-g" class="text-[9px] font-mono text-amber-700 font-bold">1.00 G</span>
+          </div>
+          <canvas id="canvas-accel" class="w-28 h-28 rounded-full border border-slate-300 bg-white shadow-inner"></canvas>
+          <div class="w-full mt-2 space-y-1 text-[10px] font-mono">
+            <div class="flex justify-between">
+              <span class="text-slate-500">LONG (X):</span>
+              <span id="val-gx" class="text-sky-700 font-bold">+0.00 g</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">LAT (Y):</span>
+              <span id="val-gy" class="text-amber-700 font-bold">+0.00 g</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">VERT (Z):</span>
+              <span id="val-gz" class="text-emerald-700 font-bold">+1.00 g</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ULTRASONIC SONAR ARRAY (12 PERIMETER TRANSDUCERS) -->
+      <div class="hud-subcard rounded-lg p-2 flex flex-col">
+        <div class="w-full flex justify-between items-center mb-1.5">
+          <span class="text-[10px] font-mono font-bold text-slate-700 uppercase">Ultrasonic Sonar Array (12-CH)</span>
+          <span id="val-sonar-min" class="text-[9px] font-mono text-emerald-700 font-bold">MIN: >8.00m</span>
+        </div>
+        <div class="grid grid-cols-12 gap-2 items-center">
+          <div class="col-span-5 flex justify-center">
+            <canvas id="canvas-sonar" class="w-24 h-28 rounded bg-white border border-slate-300"></canvas>
+          </div>
+          <div class="col-span-7 grid grid-cols-3 gap-1 font-mono text-[9px]" id="sonar-readout-grid">
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">F1</span><span id="snr-0" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">F2</span><span id="snr-1" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">F3</span><span id="snr-2" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">F4</span><span id="snr-3" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">R1</span><span id="snr-4" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">R2</span><span id="snr-5" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">B1</span><span id="snr-6" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">B2</span><span id="snr-7" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">B3</span><span id="snr-8" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">B4</span><span id="snr-9" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">L1</span><span id="snr-10" class="text-emerald-700 font-semibold">8.0m</span></div>
+            <div class="bg-white px-1 py-0.5 rounded border border-slate-200 flex justify-between"><span class="text-slate-400">L2</span><span id="snr-11" class="text-emerald-700 font-semibold">8.0m</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8 VIRTUAL CORNER CAMERAS GRID -->
+      <div class="hud-subcard rounded-lg p-2 flex-1 flex flex-col min-h-[340px]">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[10px] font-mono font-bold text-slate-700 uppercase">8-Corner Surround Vision</span>
+          <span class="text-[9px] font-mono text-slate-500">DEPTH / LIDAR</span>
+        </div>
+
+        <!-- 2 Columns x 4 Rows Camera Feeds -->
+        <div id="camera-grid" class="grid grid-cols-2 gap-1.5 flex-1">
+          <!-- Camera 0: FL-Front -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-0" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-01 FL-FWD</div>
+            <div id="cam-dist-0" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 1: FR-Front -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-1" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-02 FR-FWD</div>
+            <div id="cam-dist-1" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 2: FL-Side -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-2" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-03 FL-SIDE</div>
+            <div id="cam-dist-2" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 3: FR-Side -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-3" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-04 FR-SIDE</div>
+            <div id="cam-dist-3" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 4: RL-Side -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-4" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-05 RL-SIDE</div>
+            <div id="cam-dist-4" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 5: RR-Side -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-5" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-06 RR-SIDE</div>
+            <div id="cam-dist-5" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 6: RL-Rear -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-6" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-07 RL-REAR</div>
+            <div id="cam-dist-6" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+          <!-- Camera 7: RR-Rear -->
+          <div class="relative rounded bg-slate-100 border border-slate-300 overflow-hidden flex flex-col">
+            <canvas id="cam-canvas-7" class="w-full h-16 sm:h-20 block"></canvas>
+            <div class="absolute top-1 left-1.5 text-[9px] font-mono font-bold text-slate-800 bg-white/85 px-1 rounded border border-slate-200">CAM-08 RR-REAR</div>
+            <div id="cam-dist-7" class="absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200">CLR >25m</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- MIDDLE PANE: 3D COORDINATE SYSTEM & INTERACTIVE VEHICLE COCKPIT       -->
+    <!-- ===================================================================== -->
+    <section class="lg:col-span-6 hud-panel rounded-xl flex flex-col overflow-hidden min-h-[540px] lg:h-full">
+      <!-- Top Viewport Bar: Camera Mode Switcher & 3D Coordinate Readout -->
+      <div class="px-3 py-1.5 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-2 z-10">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-mono font-semibold text-slate-500 mr-0.5">VIEW:</span>
+          <button data-cam="chase" class="cam-mode-btn px-2 py-1 rounded text-[11px] font-mono font-semibold bg-sky-600 text-white border border-sky-700">CHASE</button>
+          <button data-cam="top" class="cam-mode-btn px-2 py-1 rounded text-[11px] font-mono font-semibold bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200">TOP 3D</button>
+          <button data-cam="orbit" class="cam-mode-btn px-2 py-1 rounded text-[11px] font-mono font-semibold bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200">ORBIT</button>
+        </div>
+
+        <!-- Live 3D World Coordinates -->
+        <div class="flex items-center gap-2.5 text-[11px] font-mono bg-slate-100 px-2.5 py-1 rounded border border-slate-300">
+          <span class="text-rose-600 font-bold">X:<span id="coord-x" class="text-slate-900 ml-0.5">0.00</span>m</span>
+          <span class="text-emerald-600 font-bold">Y:<span id="coord-y" class="text-slate-900 ml-0.5">0.00</span>m</span>
+          <span class="text-sky-600 font-bold">Z:<span id="coord-z" class="text-slate-900 ml-0.5">0.00</span>m</span>
+          <span class="text-amber-600 font-bold border-l border-slate-300 pl-2">HDG:<span id="coord-hdg" class="text-slate-900 ml-0.5">000°</span></span>
+        </div>
+      </div>
+
+      <!-- ROAD ENVIRONMENT & OBSTACLE SPAWNER BAR -->
+      <div class="px-2.5 py-1.5 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-1.5 shrink-0 z-10">
+        <div class="flex flex-wrap items-center gap-1">
+          <span class="text-[10px] font-mono font-bold text-slate-500 mr-0.5">ROAD:</span>
+          <button data-road="city" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-sky-600 text-white border border-sky-700">CITY</button>
+          <button data-road="mountainous" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100">MOUNTAIN</button>
+          <button data-road="muddy" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100">MUDDY</button>
+          <button data-road="rough" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100">ROUGH</button>
+          <button data-road="potholes" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100">POTHOLES</button>
+          <button data-road="rainy" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100">RAINY</button>
+          <button data-road="desert" class="road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100">DESERT</button>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="btn-spawn-obstacle" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100 transition flex items-center gap-1">
+            <span>➕ OBSTACLE</span>
+          </button>
+          <button id="btn-clear-obstacles" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition flex items-center gap-1" title="Remove all spawned obstacles">
+            <span>✕ CLEAR</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D WebGL Viewport Container -->
+      <div id="webgl-container" class="relative flex-1 w-full bg-[#dbeafe] min-h-[300px] cursor-grab active:cursor-grabbing">
+        <!-- Floating Top-Left Axis & Road Physics Legend -->
+        <div class="absolute top-2.5 left-2.5 pointer-events-none bg-white/85 backdrop-blur-sm border border-slate-300 rounded-lg px-2.5 py-1.5 text-[10px] font-mono space-y-0.5 shadow-sm">
+          <div class="text-slate-700 font-bold flex items-center gap-1.5">
+            <span>3D FRAME (ENU)</span>
+            <span id="hud-road-grip" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">GRIP: 1.00μ</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-rose-600 font-bold">+X East</span>
+            <span class="text-emerald-600 font-bold">+Y Elev</span>
+            <span class="text-sky-600 font-bold">+Z South</span>
+          </div>
+          <div class="text-[9px] text-slate-500">Drag to orbit • Scroll to zoom</div>
+        </div>
+
+        <!-- Floating Top-Right Speed & Gear Overlay -->
+        <div class="absolute top-2.5 right-2.5 pointer-events-none bg-white/85 backdrop-blur-sm border border-slate-300 rounded-lg px-3 py-1.5 text-right font-mono shadow-sm">
+          <div class="flex items-baseline justify-end gap-1.5">
+            <span id="hud-speed-kmh" class="text-2xl sm:text-3xl font-bold text-sky-700">0</span>
+            <span class="text-xs text-slate-500 font-semibold">KM/H</span>
+          </div>
+          <div class="text-[10px] text-slate-600">
+            <span id="hud-speed-ms">0.0</span> m/s • <span id="hud-rpm" class="text-amber-700 font-semibold">850</span> RPM
+          </div>
+        </div>
+
+        <!-- Floating Bottom-Right Radial Speedometer Gauge -->
+        <div class="absolute bottom-2.5 right-2.5 pointer-events-none bg-white/90 backdrop-blur-md border border-slate-300 rounded-2xl p-1.5 shadow-md flex flex-col items-center">
+          <canvas id="canvas-speedometer" class="w-32 h-32 sm:w-36 sm:h-36 block"></canvas>
+        </div>
+
+        <!-- Collision Red Alert Overlay Banner -->
+        <div id="collision-alert" class="hidden absolute top-14 left-1/2 -translate-x-1/2 pointer-events-none bg-rose-600/95 border border-rose-400 text-white px-4 py-1.5 rounded-lg text-xs font-mono font-bold tracking-widest shadow-xl animate-pulse z-20">
+          ⚠ COLLISION DETECTED // IMPACT VELOCITY REDUCED
+        </div>
+
+        <!-- Floating Notification Toast (when switching manual/autopilot) -->
+        <div id="sim-toast" class="hidden absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none bg-slate-900/90 border border-slate-700 text-white px-3 py-1 rounded-full text-xs font-mono shadow-lg">
+          Manual Control Engaged
+        </div>
+      </div>
+
+      <!-- BOTTOM INTERACTIVE COCKPIT CONTROLS -->
+      <div class="p-2.5 bg-white border-t border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center shrink-0">
+        
+        <!-- Steering Wheel & Angle Control (4 cols) -->
+        <div class="sm:col-span-4 hud-subcard rounded-lg p-2 flex flex-col items-center justify-between">
+          <div class="w-full flex justify-between items-center text-[10px] font-mono mb-1">
+            <span class="text-slate-600 font-semibold">STEERING [A / D]</span>
+            <span id="val-steer-deg" class="text-sky-700 font-bold">0.0°</span>
+          </div>
+          <div class="flex items-center gap-3 w-full">
+            <!-- SVG Rotating Steering Wheel -->
+            <div class="w-11 h-11 shrink-0 flex items-center justify-center">
+              <svg id="svg-steering-wheel" class="w-10 h-10 text-sky-600 transition-transform duration-75" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4">
+                <circle cx="32" cy="32" r="26" stroke="#94a3b8" stroke-width="5"/>
+                <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="3" stroke-dasharray="28 135" stroke-dashoffset="14"/>
+                <circle cx="32" cy="32" r="7" fill="#f8fafc" stroke="currentColor" stroke-width="3"/>
+                <line x1="6" y1="32" x2="25" y2="32" stroke="currentColor" stroke-width="4"/>
+                <line x1="39" y1="32" x2="58" y2="32" stroke="currentColor" stroke-width="4"/>
+                <line x1="32" y1="39" x2="32" y2="58" stroke="currentColor" stroke-width="4"/>
+              </svg>
+            </div>
+            <div class="flex-1 flex flex-col gap-1">
+              <input id="slider-steer" type="range" min="-36" max="36" step="0.5" value="0" class="steer-slider w-full" />
+              <div class="flex justify-between text-[9px] font-mono text-slate-500">
+                <span>-36° L</span>
+                <button id="btn-center-steer" class="text-sky-700 font-semibold hover:underline">CENTER</button>
+                <span>+36° R</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicators, Hazard & Gear Selector (4 cols) -->
+        <div class="sm:col-span-4 hud-subcard rounded-lg p-2 flex flex-col justify-between h-full">
+          <!-- Turn Signals & Hazard -->
+          <div class="flex items-center justify-between gap-1.5 mb-2">
+            <button id="btn-ind-left" class="flex-1 py-1.5 rounded bg-white border border-slate-300 text-slate-600 hover:text-amber-600 font-mono text-xs font-bold flex items-center justify-center gap-1 transition" title="Left Turn Signal [Q]">
+              <span>◀</span> <span class="text-[10px]">[Q]</span>
+            </button>
+            <button id="btn-hazard" class="px-2.5 py-1.5 rounded bg-white border border-slate-300 text-rose-600 hover:bg-rose-50 font-mono text-xs font-bold transition" title="Hazard Lights [H]">
+              ⚠
+            </button>
+            <button id="btn-ind-right" class="flex-1 py-1.5 rounded bg-white border border-slate-300 text-slate-600 hover:text-amber-600 font-mono text-xs font-bold flex items-center justify-center gap-1 transition" title="Right Turn Signal [E]">
+              <span class="text-[10px]">[E]</span> <span>▶</span>
+            </button>
+          </div>
+
+          <!-- PRND Gear Shifter -->
+          <div class="grid grid-cols-4 gap-1 bg-slate-200/70 p-1 rounded border border-slate-300 font-mono text-xs font-bold">
+            <button data-gear="P" class="gear-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">P</button>
+            <button data-gear="R" class="gear-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">R</button>
+            <button data-gear="N" class="gear-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">N</button>
+            <button data-gear="D" class="gear-btn py-1 rounded bg-sky-600 text-white shadow-sm transition">D</button>
+          </div>
+        </div>
+
+        <!-- Pedals: Handbrake, Brake, Accelerator (4 cols) -->
+        <div class="sm:col-span-4 hud-subcard rounded-lg p-2 flex items-stretch justify-between gap-1.5 h-full">
+          <!-- Handbrake -->
+          <button id="btn-handbrake" class="flex-1 rounded bg-white border border-slate-300 p-1.5 flex flex-col items-center justify-between hover:border-rose-400 transition" title="Handbrake [SPACE]">
+            <span class="text-[9px] font-mono font-semibold text-slate-500">H-BRAKE</span>
+            <span id="handbrake-badge" class="text-xs font-mono font-bold text-slate-400">OFF</span>
+            <span class="text-[8px] font-mono text-slate-400">[SPACE]</span>
+          </button>
+
+          <!-- Brake Pedal -->
+          <button id="btn-brake" class="flex-1 rounded bg-white border border-slate-300 p-1.5 flex flex-col items-center justify-between active:scale-95 transition" title="Brake [S / Down]">
+            <span class="text-[9px] font-mono font-semibold text-slate-500">BRAKE</span>
+            <div class="w-full h-5 bg-slate-100 rounded overflow-hidden border border-slate-300 flex items-end">
+              <div id="bar-brake" class="w-full bg-rose-500 transition-all duration-75" style="height: 0%"></div>
+            </div>
+            <span class="text-[8px] font-mono text-slate-400">[S / ↓]</span>
+          </button>
+
+          <!-- Accelerator Pedal -->
+          <button id="btn-accel" class="flex-1 rounded bg-white border border-slate-300 p-1.5 flex flex-col items-center justify-between active:scale-95 transition" title="Accelerator [W / Up]">
+            <span class="text-[9px] font-mono font-semibold text-slate-500">THROTTLE</span>
+            <div class="w-full h-5 bg-slate-100 rounded overflow-hidden border border-slate-300 flex items-end">
+              <div id="bar-throttle" class="w-full bg-emerald-500 transition-all duration-75" style="height: 0%"></div>
+            </div>
+            <span class="text-[8px] font-mono text-slate-400">[W / ↑]</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- RIGHT PANE: LIVE TELEMETRY FEED, SPARKLINES & DATA STREAM             -->
+    <!-- ===================================================================== -->
+    <section class="lg:col-span-3 hud-panel rounded-xl p-2.5 flex flex-col gap-2.5 lg:h-full lg:overflow-hidden">
+      <!-- Header & Stream Controls -->
+      <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 shrink-0">
+        <h2 class="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Live Telemetry Stream
+        </h2>
+        <div class="flex items-center gap-1">
+          <button id="btn-stream-pause" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 text-amber-700 border border-slate-300">PAUSE</button>
+          <button id="btn-stream-clear" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300">CLR</button>
+          <button id="btn-export-csv" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300">CSV</button>
+        </div>
+      </div>
+
+      <!-- Mini Real-time Sparklines -->
+      <div class="grid grid-cols-3 gap-1.5 shrink-0">
+        <div class="hud-subcard rounded-lg p-1.5">
+          <div class="flex justify-between text-[9px] font-mono">
+            <span class="text-slate-500 font-semibold">SPEED</span>
+            <span id="spark-val-speed" class="text-sky-700 font-bold">0</span>
+          </div>
+          <canvas id="spark-speed" class="w-full h-10 mt-1 block"></canvas>
+        </div>
+        <div class="hud-subcard rounded-lg p-1.5">
+          <div class="flex justify-between text-[9px] font-mono">
+            <span class="text-slate-500 font-semibold">YAW RT</span>
+            <span id="spark-val-yaw" class="text-emerald-700 font-bold">0.0</span>
+          </div>
+          <canvas id="spark-yaw" class="w-full h-10 mt-1 block"></canvas>
+        </div>
+        <div class="hud-subcard rounded-lg p-1.5">
+          <div class="flex justify-between text-[9px] font-mono">
+            <span class="text-slate-500 font-semibold">LAT G</span>
+            <span id="spark-val-latg" class="text-amber-700 font-bold">0.00</span>
+          </div>
+          <canvas id="spark-latg" class="w-full h-10 mt-1 block"></canvas>
+        </div>
+      </div>
+
+      <!-- Wheel Encoders -->
+      <div class="hud-subcard rounded-lg p-2 shrink-0">
+        <div class="text-[10px] font-mono font-bold text-slate-600 uppercase mb-1.5 flex justify-between">
+          <span>Wheel Encoders (RPM)</span>
+          <span id="lbl-active-surface" class="text-sky-700">ASPHALT DRY</span>
+        </div>
+        <div class="grid grid-cols-4 gap-1 text-center font-mono text-[10px]">
+          <div class="bg-white p-1 rounded border border-slate-200">
+            <div class="text-[8px] text-slate-400 font-semibold">FL</div>
+            <div id="rpm-fl" class="text-sky-700 font-bold">0</div>
+          </div>
+          <div class="bg-white p-1 rounded border border-slate-200">
+            <div class="text-[8px] text-slate-400 font-semibold">FR</div>
+            <div id="rpm-fr" class="text-sky-700 font-bold">0</div>
+          </div>
+          <div class="bg-white p-1 rounded border border-slate-200">
+            <div class="text-[8px] text-slate-400 font-semibold">RL</div>
+            <div id="rpm-rl" class="text-emerald-700 font-bold">0</div>
+          </div>
+          <div class="bg-white p-1 rounded border border-slate-200">
+            <div class="text-[8px] text-slate-400 font-semibold">RR</div>
+            <div id="rpm-rr" class="text-emerald-700 font-bold">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="flex items-center gap-1 shrink-0 font-mono text-[10px]">
+        <button data-filter="ALL" class="feed-filter-btn flex-1 py-1 rounded bg-sky-600 text-white border border-sky-700 font-semibold">ALL</button>
+        <button data-filter="IMU" class="feed-filter-btn flex-1 py-1 rounded bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200">IMU/GYRO</button>
+        <button data-filter="SONAR" class="feed-filter-btn flex-1 py-1 rounded bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200">SONAR</button>
+        <button data-filter="CAM" class="feed-filter-btn flex-1 py-1 rounded bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200">8-CAM</button>
+        <button data-filter="CTRL" class="feed-filter-btn flex-1 py-1 rounded bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200">CTRL</button>
+      </div>
+
+      <!-- Scrolling JSON / Packet Telemetry Feed -->
+      <div id="telemetry-feed" class="flex-1 hud-subcard rounded-lg p-2 overflow-y-auto font-mono text-[10px] space-y-1.5 min-h-[200px]">
+        <!-- Live packets injected here -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- JAVASCRIPT SIMULATION, THREE.JS 3D SCENE, CAMERAS & TELEMETRY ENGINE    -->
+  <!-- ======================================================================= -->
+  <script>
+    (function () {
+      'use strict';
+
+      // -----------------------------------------------------------------------
+      // 1. ROAD SCENARIO PROFILES & GLOBAL SIMULATION STATE
+      // -----------------------------------------------------------------------
+      const ROAD_PROFILES = {
+        city: {
+          label: 'CITY AVENUE',
+          surfaceTag: 'ASPHALT DRY',
+          skyColor: 0xdbeafe,
+          fogColor: 0xdbeafe,
+          fogDensity: 0.0035,
+          groundColor: 0xdce6d5,
+          roadColor: 0x334155,
+          markingColor: 0xf8fafc,
+          grip: 1.0,
+          dragMult: 1.0,
+          bumpAmp: 0.002,
+          bumpFreq: 4.0,
+          potholeCount: 0,
+          elevationScale: 0.0,
+          rainEnabled: false
+        },
+        mountainous: {
+          label: 'MOUNTAINOUS PASS',
+          surfaceTag: 'ALPINE GRADE',
+          skyColor: 0xbae6fd,
+          fogColor: 0xe0f2fe,
+          fogDensity: 0.004,
+          groundColor: 0x86efac,
+          roadColor: 0x475569,
+          markingColor: 0xfef08a,
+          grip: 0.92,
+          dragMult: 1.05,
+          bumpAmp: 0.006,
+          bumpFreq: 3.2,
+          potholeCount: 2,
+          elevationScale: 1.0,
+          rainEnabled: false
+        },
+        muddy: {
+          label: 'MUDDY TRAIL',
+          surfaceTag: 'SOFT MUD / SLIP',
+          skyColor: 0xe2e8f0,
+          fogColor: 0xd6d3d1,
+          fogDensity: 0.006,
+          groundColor: 0x78553a,
+          roadColor: 0x5c4028,
+          markingColor: 0x8c6239,
+          grip: 0.56,
+          dragMult: 1.65,
+          bumpAmp: 0.015,
+          bumpFreq: 5.5,
+          potholeCount: 6,
+          elevationScale: 0.25,
+          rainEnabled: false
+        },
+        rough: {
+          label: 'ROUGH GRAVEL',
+          surfaceTag: 'COBBLESTONE / GRAVEL',
+          skyColor: 0xe0f2fe,
+          fogColor: 0xe2e8f0,
+          fogDensity: 0.004,
+          groundColor: 0xcbd5e1,
+          roadColor: 0x64748b,
+          markingColor: 0x94a3b8,
+          grip: 0.78,
+          dragMult: 1.25,
+          bumpAmp: 0.022,
+          bumpFreq: 14.0,
+          potholeCount: 4,
+          elevationScale: 0.2,
+          rainEnabled: false
+        },
+        potholes: {
+          label: 'DAMAGED / POTHOLES',
+          surfaceTag: 'CRATERED ASPHALT',
+          skyColor: 0xdbeafe,
+          fogColor: 0xe2e8f0,
+          fogDensity: 0.004,
+          groundColor: 0xcbd5e1,
+          roadColor: 0x3f4756,
+          markingColor: 0xfacc15,
+          grip: 0.85,
+          dragMult: 1.15,
+          bumpAmp: 0.01,
+          bumpFreq: 6.0,
+          potholeCount: 22,
+          elevationScale: 0.0,
+          rainEnabled: false
+        },
+        rainy: {
+          label: 'RAINY HIGHWAY',
+          surfaceTag: 'WET HYDROPLANE',
+          skyColor: 0x94a3b8,
+          fogColor: 0x94a3b8,
+          fogDensity: 0.0085,
+          groundColor: 0x64748b,
+          roadColor: 0x1e293b,
+          markingColor: 0xe2e8f0,
+          grip: 0.64,
+          dragMult: 1.12,
+          bumpAmp: 0.003,
+          bumpFreq: 4.5,
+          potholeCount: 3,
+          elevationScale: 0.15,
+          rainEnabled: true
+        },
+        desert: {
+          label: 'DESERT DUNES',
+          surfaceTag: 'LOOSE SAND / DUNE',
+          skyColor: 0xfef3c7,
+          fogColor: 0xfde68a,
+          fogDensity: 0.0045,
+          groundColor: 0xf59e0b,
+          roadColor: 0xd97706,
+          markingColor: 0xfef3c7,
+          grip: 0.68,
+          dragMult: 1.48,
+          bumpAmp: 0.012,
+          bumpFreq: 2.8,
+          potholeCount: 0,
+          elevationScale: 0.65,
+          rainEnabled: false
+        }
+      };
+
+      const state = {
+        simTime: 0,
+        timeScale: 1.0, // Slow motion simulation multiplier (0.1x to 1.0x)
+        autopilot: true,
+        pausedStream: false,
+        feedFilter: 'ALL',
+        cameraMode: 'chase',
+        roadType: 'city',
+        gridVisible: true,
+
+        // Vehicle World Pose (ENU: X=East, Y=Up/Elevation, Z=South)
+        pos: new THREE.Vector3(0, 0, 20),
+        vel: new THREE.Vector3(0, 0, 0),
+        speed: 0,
+        heading: Math.PI * 0.5,
+        yawRate: 0,
+        pitch: 0,           // Slope gradient pitch (vehicle body stays level, plane tilts)
+        roll: 0,            // Road banking roll
+        pitchRate: 0,
+        rollRate: 0,
+
+        // Accelerations (in G)
+        gLong: 0,
+        gLat: 0,
+        gVert: 1.0,
+
+        // Driver Inputs
+        throttle: 0,
+        brake: 0,
+        steerAngle: 0,
+        targetSteer: 0,
+        handbrake: false,
+        gear: 'D',
+        indLeft: false,
+        indRight: false,
+        hazard: false,
+        blinkState: false,
+
+        // Wheel dynamics
+        wheelSpin: 0,
+        wheelRPM: { fl: 0, fr: 0, rl: 0, rr: 0 },
+
+        // 8 Corner Cameras distance telemetry
+        camRanges: [25, 25, 25, 25, 25, 25, 25, 25],
+        camTargets: ['NONE', 'NONE', 'NONE', 'NONE', 'NONE', 'NONE', 'NONE', 'NONE'],
+
+        // 12 Ultrasonic Sonar Transducers (0..8.0m range)
+        sonarRanges: new Array(12).fill(8.0),
+
+        // Telemetry history
+        history: {
+          speed: new Array(50).fill(0),
+          yaw: new Array(50).fill(0),
+          latG: new Array(50).fill(0),
+          csvRows: [
+            'time_s,road_type,pos_x,pos_y,pos_z,speed_kmh,heading_deg,pitch_deg,roll_deg,g_long,g_lat,g_vert,steer_deg,gear'
+          ]
+        }
+      };
+
+      const keys = {
+        w: false, a: false, s: false, d: false,
+        ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
+      };
+
+      const VEH = {
+        wheelbase: 2.75,
+        trackWidth: 1.65,
+        maxSteerRad: THREE.MathUtils.degToRad(36),
+        maxSpeedFwd: 34.0,
+        maxSpeedRev: 12.0,
+        engineForce: 18.0,
+        brakeForce: 28.0,
+        dragCoeff: 0.35
+      };
+
+      // -----------------------------------------------------------------------
+      // 2. THREE.JS 3D COORDINATE SYSTEM & REAL-WORLD ROAD CIRCUIT
+      // -----------------------------------------------------------------------
+      const container = document.getElementById('webgl-container');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xdbeafe);
+      scene.fog = new THREE.FogExp2(0xdbeafe, 0.0035);
+
+      const camera = new THREE.PerspectiveCamera(52, container.clientWidth / container.clientHeight, 0.2, 450);
+      camera.position.set(22, 7, -13);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.95);
+      scene.add(hemiLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.15);
+      dirLight.position.set(45, 75, 35);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      dirLight.shadow.camera.near = 5;
+      dirLight.shadow.camera.far = 180;
+      const dShadow = 65;
+      dirLight.shadow.camera.left = -dShadow;
+      dirLight.shadow.camera.right = dShadow;
+      dirLight.shadow.camera.top = dShadow;
+      dirLight.shadow.camera.bottom = -dShadow;
+      scene.add(dirLight);
+
+      const gridHelper = new THREE.GridHelper(240, 60, 0x64748b, 0x94a3b8);
+      gridHelper.material.opacity = 0.16;
+      gridHelper.material.transparent = true;
+      gridHelper.position.y = 0.03;
+      scene.add(gridHelper);
+
+      const axesGroup = new THREE.Group();
+      const makeAxis = (dir, color, len = 12) => {
+        const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.65 });
+        const pts = [new THREE.Vector3(0, 0.06, 0), dir.clone().multiplyScalar(len).add(new THREE.Vector3(0, 0.06, 0))];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        return new THREE.Line(geo, mat);
+      };
+      axesGroup.add(makeAxis(new THREE.Vector3(1, 0, 0), 0xe11d48));
+      axesGroup.add(makeAxis(new THREE.Vector3(0, 1, 0), 0x059669));
+      axesGroup.add(makeAxis(new THREE.Vector3(0, 0, 1), 0x0284c7));
+      scene.add(axesGroup);
+
+      const LOOP_RX = 22.0;
+      const LOOP_RZ = 28.0;
+      const ROAD_WIDTH = 8.6;
+
+      const obstacles = [];
+      const potholes = [];
+      const sceneryObjects = [];
+      const envDecorGroup = new THREE.Group();
+      scene.add(envDecorGroup);
+
+      let groundMesh, groundMat, roadMat, dashMat, roadRibbonMesh, dashRibbonMesh;
+
+      // Curly / Winding Figure-Eight & S-Curve Circuit Path Function
+      function getRoadCenterPoint(t, elevScale = 0) {
+        // Parametric curly winding track: smooth closed loop with sinusoidal S-curves
+        const x = Math.sin(t) * 38.0 + Math.sin(t * 2.0) * 10.0;
+        const z = Math.cos(t) * 28.0 - Math.cos(t * 3.0) * 6.0;
+        const hill = (Math.sin(t * 3.0) * 3.0 + Math.cos(t * 2.0) * 1.8) * elevScale;
+        return new THREE.Vector3(x, hill, z);
+      }
+
+      // Compute outward track normal cleanly along the curly curve
+      function getRoadTangentAndNormal(t, elevScale = 0) {
+        const dt = 0.005;
+        const pPrev = getRoadCenterPoint(t - dt, elevScale);
+        const pNext = getRoadCenterPoint(t + dt, elevScale);
+        const tangent = pNext.clone().sub(pPrev).setY(0).normalize();
+        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x);
+        return { tangent, normal };
+      }
+
+      // Smooth surrounding landscape elevation so terrain seamlessly meets road elevation without floating gaps
+      function getLandscapeHeight(x, z, elevScale) {
+        if (elevScale <= 0.001) return 0;
+        // Sample nearest road point to blend road height smoothly into surrounding hills/dunes
+        let bestY = 0;
+        let minDistSq = Infinity;
+        const steps = 72;
+        for (let i = 0; i < steps; i++) {
+          const tTest = (i / steps) * Math.PI * 2;
+          const pt = getRoadCenterPoint(tTest, elevScale);
+          const dSq = (x - pt.x) * (x - pt.x) + (z - pt.z) * (z - pt.z);
+          if (dSq < minDistSq) {
+            minDistSq = dSq;
+            bestY = pt.y;
+          }
+        }
+        const dist = Math.sqrt(minDistSq);
+        const roadBlend = Math.exp(-Math.pow(Math.max(0, dist - ROAD_WIDTH * 0.5) / 14.0, 2));
+        const rollingHills = (Math.sin(x * 0.05) * Math.cos(z * 0.05) * 4.5 + Math.sin((x + z) * 0.03) * 2.5) * elevScale;
+        return bestY * roadBlend + rollingHills * (1 - roadBlend);
+      }
+
+      function initRoadWorld() {
+        const groundGeo = new THREE.PlaneGeometry(320, 320, 96, 96);
+        groundGeo.rotateX(-Math.PI / 2);
+        groundMat = new THREE.MeshStandardMaterial({
+          color: 0xdce6d5,
+          roughness: 0.92,
+          metalness: 0.04,
+          flatShading: false
+        });
+        groundMesh = new THREE.Mesh(groundGeo, groundMat);
+        groundMesh.receiveShadow = true;
+        scene.add(groundMesh);
+
+        roadMat = new THREE.MeshStandardMaterial({
+          color: 0x334155,
+          roughness: 0.85,
+          metalness: 0.08,
+          side: THREE.DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+          polygonOffsetUnits: -1
+        });
+
+        dashMat = new THREE.MeshBasicMaterial({
+          color: 0xf8fafc,
+          side: THREE.DoubleSide,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2
+        });
+
+        roadRibbonMesh = new THREE.Mesh(new THREE.BufferGeometry(), roadMat);
+        roadRibbonMesh.receiveShadow = true;
+        scene.add(roadRibbonMesh);
+
+        dashRibbonMesh = new THREE.Mesh(new THREE.BufferGeometry(), dashMat);
+        scene.add(dashRibbonMesh);
+      }
+      initRoadWorld();
+
+      function spawnDynamicObstacle(customX, customZ, customLabel) {
+        let ox, oz, label;
+        if (customX !== undefined && customZ !== undefined) {
+          ox = customX;
+          oz = customZ;
+          label = customLabel || `OBSTACLE-${obstacles.length + 1}`;
+        } else {
+          const spawnDist = 9.5;
+          ox = state.pos.x + Math.sin(state.heading) * spawnDist;
+          oz = state.pos.z + Math.cos(state.heading) * spawnDist;
+          label = `HAZARD-${obstacles.length + 1}`;
+        }
+
+        const radius = 0.85;
+        const height = 1.6;
+
+        const meshGroup = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.5, 0.55, height, 12),
+          new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.3 })
+        );
+        body.position.y = height / 2;
+        body.castShadow = true;
+        meshGroup.add(body);
+
+        const band = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.52, 0.57, 0.35, 12),
+          new THREE.MeshBasicMaterial({ color: 0xfef08a })
+        );
+        band.position.y = height * 0.6;
+        meshGroup.add(band);
+
+        meshGroup.position.set(ox, getTerrainInfo(ox, oz).height, oz);
+        scene.add(meshGroup);
+
+        const obsObj = { x: ox, z: oz, radius, height, label, mesh: meshGroup };
+        obstacles.push(obsObj);
+        pushTelemetryPacket('CTRL', 'text-rose-600', `OBSTACLE_SPAWNED -> ${label} at (${ox.toFixed(1)}, ${oz.toFixed(1)})`);
+        return obsObj;
+      }
+
+      function clearDynamicObstacles() {
+        const count = obstacles.length;
+        while (obstacles.length > 0) {
+          const obs = obstacles.pop();
+          if (obs && obs.mesh) {
+            scene.remove(obs.mesh);
+          }
+        }
+        state.reverseEscapeTimer = 0;
+        const alertBanner = document.getElementById('collision-alert');
+        if (alertBanner) alertBanner.classList.add('hidden');
+        pushTelemetryPacket('CTRL', 'text-sky-700', `OBSTACLES_CLEARED -> Removed ${count} hazard(s) from track`);
+      }
+
+      function rebuildRoadScenario(typeKey) {
+        const prof = ROAD_PROFILES[typeKey];
+        state.roadType = typeKey;
+
+        scene.background.setHex(prof.skyColor);
+        scene.fog.color.setHex(prof.fogColor);
+        scene.fog.density = prof.fogDensity;
+        groundMat.color.setHex(prof.groundColor);
+        roadMat.color.setHex(prof.roadColor);
+        dashMat.color.setHex(prof.markingColor);
+
+        // Update 3D contoured terrain vertices to match road elevation & hills
+        const posAttr = groundMesh.geometry.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+          const vx = posAttr.getX(i);
+          const vz = posAttr.getZ(i);
+          posAttr.setY(i, getLandscapeHeight(vx, vz, prof.elevationScale) - 0.04);
+        }
+        posAttr.needsUpdate = true;
+        groundMesh.geometry.computeVertexNormals();
+
+        // Keep coordinate grid slightly above maximum terrain height or flat when elevation is 0
+        gridHelper.position.y = prof.elevationScale > 0 ? 0.08 : 0.03;
+        gridHelper.visible = state.gridVisible && prof.elevationScale === 0;
+
+        document.getElementById('hud-road-grip').textContent = `GRIP: ${prof.grip.toFixed(2)}μ`;
+        document.getElementById('lbl-active-surface').textContent = prof.surfaceTag;
+
+        const segments = 240; // High resolution for smooth curly winding track
+        const roadVerts = [];
+        const roadIndices = [];
+        const dashVerts = [];
+        const dashIndices = [];
+
+        for (let i = 0; i <= segments; i++) {
+          const t = (i / segments) * Math.PI * 2;
+          const p = getRoadCenterPoint(t, prof.elevationScale);
+          const { normal } = getRoadTangentAndNormal(t, prof.elevationScale);
+
+          const leftEdge = p.clone().addScaledVector(normal, ROAD_WIDTH * 0.5);
+          const rightEdge = p.clone().addScaledVector(normal, -ROAD_WIDTH * 0.5);
+
+          roadVerts.push(leftEdge.x, leftEdge.y + 0.05, leftEdge.z);
+          roadVerts.push(rightEdge.x, rightEdge.y + 0.05, rightEdge.z);
+
+          if (i < segments) {
+            const base = i * 2;
+            roadIndices.push(base, base + 1, base + 2);
+            roadIndices.push(base + 1, base + 3, base + 2);
+          }
+
+          if (i < segments && i % 2 === 0) {
+            const t2 = ((i + 0.52) / segments) * Math.PI * 2;
+            const p2 = getRoadCenterPoint(t2, prof.elevationScale);
+            const { normal: normal2 } = getRoadTangentAndNormal(t2, prof.elevationScale);
+            const dBase = (dashVerts.length / 3);
+            const hw = 0.14;
+            dashVerts.push(p.x - normal.x * hw, p.y + 0.08, p.z - normal.z * hw);
+            dashVerts.push(p.x + normal.x * hw, p.y + 0.08, p.z + normal.z * hw);
+            dashVerts.push(p2.x - normal2.x * hw, p2.y + 0.08, p2.z - normal2.z * hw);
+            dashVerts.push(p2.x + normal2.x * hw, p2.y + 0.08, p2.z + normal2.z * hw);
+            dashIndices.push(dBase, dBase + 1, dBase + 2, dBase + 1, dBase + 3, dBase + 2);
+          }
+        }
+
+        const newRoadGeo = new THREE.BufferGeometry();
+        newRoadGeo.setAttribute('position', new THREE.Float32BufferAttribute(roadVerts, 3));
+        newRoadGeo.setIndex(roadIndices);
+        newRoadGeo.computeVertexNormals();
+        roadRibbonMesh.geometry.dispose();
+        roadRibbonMesh.geometry = newRoadGeo;
+
+        const newDashGeo = new THREE.BufferGeometry();
+        newDashGeo.setAttribute('position', new THREE.Float32BufferAttribute(dashVerts, 3));
+        newDashGeo.setIndex(dashIndices);
+        dashRibbonMesh.geometry.dispose();
+        dashRibbonMesh.geometry = newDashGeo;
+
+        while (envDecorGroup.children.length > 0) {
+          envDecorGroup.remove(envDecorGroup.children[0]);
+        }
+        clearDynamicObstacles(true);
+        potholes.length = 0;
+        sceneryObjects.length = 0;
+
+        for (let i = 0; i < prof.potholeCount; i++) {
+          const angle = ((i + 0.35) / prof.potholeCount) * Math.PI * 2;
+          const radialOffset = ((i % 3) - 1) * 2.1;
+          const cPt = getRoadCenterPoint(angle, prof.elevationScale);
+          const { normal: normDir } = getRoadTangentAndNormal(angle, prof.elevationScale);
+          const px = cPt.x + normDir.x * radialOffset;
+          const pz = cPt.z + normDir.z * radialOffset;
+          const pRad = typeKey === 'muddy' ? 1.45 : 0.85;
+
+          const holeMesh = new THREE.Mesh(
+            new THREE.CircleGeometry(pRad, 16),
+            new THREE.MeshBasicMaterial({
+              color: typeKey === 'muddy' ? 0x3e2723 : typeKey === 'rainy' ? 0x38bdf8 : 0x0f172a,
+              transparent: true,
+              opacity: typeKey === 'rainy' ? 0.45 : 0.85,
+              polygonOffset: true,
+              polygonOffsetFactor: -3,
+              polygonOffsetUnits: -3
+            })
+          );
+          holeMesh.rotation.x = -Math.PI / 2;
+          holeMesh.position.set(px, cPt.y + 0.085, pz);
+          envDecorGroup.add(holeMesh);
+
+          potholes.push({ x: px, z: pz, radius: pRad, depth: typeKey === 'potholes' ? 0.22 : 0.12 });
+        }
+
+        // Place roadside scenery strictly outside the road ribbon & grounded on the terrain height
+        const propCount = 24;
+        for (let i = 0; i < propCount; i++) {
+          const t = (i / propCount) * Math.PI * 2 + 0.08;
+          const side = i % 2 === 0 ? 1 : -1;
+          const offset = (ROAD_WIDTH * 0.5 + 4.8) * side;
+          const centerPt = getRoadCenterPoint(t, prof.elevationScale);
+          const { normal: outDir } = getRoadTangentAndNormal(t, prof.elevationScale);
+          const ox = centerPt.x + outDir.x * offset;
+          const oz = centerPt.z + outDir.z * offset;
+
+          // Verify prop never overlaps any section of the curly road ribbon
+          let tooCloseToRoad = false;
+          for (let s = 0; s < 90; s++) {
+            const checkPt = getRoadCenterPoint((s / 90) * Math.PI * 2, prof.elevationScale);
+            if (Math.hypot(ox - checkPt.x, oz - checkPt.z) < ROAD_WIDTH * 0.78) {
+              tooCloseToRoad = true;
+              break;
+            }
+          }
+          if (tooCloseToRoad) continue;
+
+          const groundY = getLandscapeHeight(ox, oz, prof.elevationScale);
+
+          if (typeKey === 'mountainous') {
+            const trunk = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.25, 0.35, 1.8, 8),
+              new THREE.MeshStandardMaterial({ color: 0x78350f })
+            );
+            trunk.position.set(ox, groundY + 0.9, oz);
+            const foliage = new THREE.Mesh(
+              new THREE.ConeGeometry(1.8, 5.0, 8),
+              new THREE.MeshStandardMaterial({ color: 0x15803d })
+            );
+            foliage.position.set(ox, groundY + 3.8, oz);
+            envDecorGroup.add(trunk, foliage);
+            sceneryObjects.push({ x: ox, z: oz, radius: 1.5, height: 6.2, label: 'PINE-TREE', color: '#15803d', isHazard: false });
+          } else if (typeKey === 'desert') {
+            const cactus = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.38, 0.45, 3.8, 10),
+              new THREE.MeshStandardMaterial({ color: 0x16a34a })
+            );
+            cactus.position.set(ox, groundY + 1.9, oz);
+            envDecorGroup.add(cactus);
+            sceneryObjects.push({ x: ox, z: oz, radius: 0.65, height: 3.8, label: 'CACTUS', color: '#16a34a', isHazard: false });
+          } else if (typeKey === 'city') {
+            const buildingH = 5 + (i % 4) * 3.5;
+            const bldg = new THREE.Mesh(
+              new THREE.BoxGeometry(3.2, buildingH, 3.2),
+              new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0xcbd5e1 : 0x94a3b8, roughness: 0.6 })
+            );
+            bldg.position.set(ox, groundY + buildingH / 2, oz);
+            bldg.castShadow = true;
+            bldg.receiveShadow = true;
+            envDecorGroup.add(bldg);
+            sceneryObjects.push({ x: ox, z: oz, radius: 1.8, height: buildingH, label: 'BUILDING', color: '#94a3b8', isHazard: false });
+          } else {
+            const barrel = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.45, 0.45, 1.1, 10),
+              new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 })
+            );
+            barrel.position.set(ox, groundY + 0.55, oz);
+            barrel.castShadow = true;
+            envDecorGroup.add(barrel);
+            sceneryObjects.push({ x: ox, z: oz, radius: 0.5, height: 1.1, label: 'BARREL', color: '#64748b', isHazard: false });
+          }
+        }
+      }
+
+      function clearDynamicObstacles(silent = false) {
+        const count = obstacles.length;
+        while (obstacles.length > 0) {
+          const obs = obstacles.pop();
+          if (obs && obs.mesh) {
+            scene.remove(obs.mesh);
+          }
+        }
+        state.reverseEscapeTimer = 0;
+        const alertBanner = document.getElementById('collision-alert');
+        if (alertBanner) alertBanner.classList.add('hidden');
+        if (!silent) {
+          pushTelemetryPacket('CTRL', 'text-sky-700', `OBSTACLES_CLEARED -> Removed ${count} hazard(s) from track`);
+        }
+      }
+
+      // Initialize vehicle pose directly on the curly circuit starting tangent
+      function alignVehicleToStart() {
+        const prof = ROAD_PROFILES[state.roadType];
+        const startPt = getRoadCenterPoint(0, prof.elevationScale);
+        const { tangent } = getRoadTangentAndNormal(0, prof.elevationScale);
+        state.pos.set(startPt.x, startPt.y, startPt.z);
+        state.heading = Math.atan2(tangent.x, tangent.z);
+      }
+      alignVehicleToStart();
+
+      // 3D Rain Particle System for Rainy Scenario
+      const RAIN_COUNT = 800;
+      const rainGeo = new THREE.BufferGeometry();
+      const rainPos = new Float32Array(RAIN_COUNT * 3);
+      for (let i = 0; i < RAIN_COUNT; i++) {
+        rainPos[i * 3] = (Math.random() - 0.5) * 90;
+        rainPos[i * 3 + 1] = Math.random() * 24;
+        rainPos[i * 3 + 2] = (Math.random() - 0.5) * 90;
+      }
+      rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+      const rainMat = new THREE.PointsMaterial({
+        color: 0x38bdf8,
+        size: 0.22,
+        transparent: true,
+        opacity: 0.65
+      });
+      const rainPoints = new THREE.Points(rainGeo, rainMat);
+      rainPoints.visible = false;
+      scene.add(rainPoints);
+
+      function updateRainParticles(dt) {
+        const isRain = ROAD_PROFILES[state.roadType].rainEnabled;
+        rainPoints.visible = isRain;
+        if (!isRain) return;
+
+        const arr = rainGeo.attributes.position.array;
+        for (let i = 0; i < RAIN_COUNT; i++) {
+          arr[i * 3 + 1] -= 26 * dt;
+          if (arr[i * 3 + 1] < 0) {
+            arr[i * 3] = state.pos.x + (Math.random() - 0.5) * 70;
+            arr[i * 3 + 1] = 22;
+            arr[i * 3 + 2] = state.pos.z + (Math.random() - 0.5) * 70;
+          }
+        }
+        rainGeo.attributes.position.needsUpdate = true;
+      }
+
+      rebuildRoadScenario('city');
+
+      function getTerrainInfo(x, z) {
+        const prof = ROAD_PROFILES[state.roadType];
+        
+        // Find closest track parameter t for the curly circuit
+        let bestT = 0;
+        let minDistSq = Infinity;
+        const steps = 120;
+        for (let i = 0; i < steps; i++) {
+          const tTest = (i / steps) * Math.PI * 2;
+          const pt = getRoadCenterPoint(tTest, prof.elevationScale);
+          const dSq = (x - pt.x) * (x - pt.x) + (z - pt.z) * (z - pt.z);
+          if (dSq < minDistSq) {
+            minDistSq = dSq;
+            bestT = tTest;
+          }
+        }
+
+        const centerPt = getRoadCenterPoint(bestT, prof.elevationScale);
+        const nextPt = getRoadCenterPoint(bestT + 0.02, prof.elevationScale);
+        const distFromCenterline = Math.sqrt(minDistSq);
+
+        let height = distFromCenterline <= ROAD_WIDTH * 0.65
+          ? centerPt.y + 0.05
+          : getLandscapeHeight(x, z, prof.elevationScale);
+        let slopeZ = (nextPt.y - centerPt.y) / (centerPt.distanceTo(nextPt) || 1);
+
+        let potholeDip = 0;
+        for (const ph of potholes) {
+          const d = Math.hypot(x - ph.x, z - ph.z);
+          if (d < ph.radius) {
+            potholeDip = Math.max(potholeDip, (1 - d / ph.radius) * ph.depth);
+          }
+        }
+
+        const speedRatio = Math.min(1, Math.abs(state.speed) / 12);
+        const microBump = Math.sin(state.simTime * prof.bumpFreq * 6 + x * 1.7) * prof.bumpAmp * speedRatio;
+
+        return {
+          height: height - potholeDip + microBump,
+          slopeZ,
+          potholeDip
+        };
+      }
+
+      // -----------------------------------------------------------------------
+      // 3. DETAILED & REALISTIC 3D VEHICLE MODEL (LEVEL BODY + TILT PLANE)
+      // -----------------------------------------------------------------------
+      const vehicleRoot = new THREE.Group();
+      scene.add(vehicleRoot);
+
+      // Level Sprung Chassis Group (Always perfectly horizontal/upright)
+      const chassisGroup = new THREE.Group();
+      vehicleRoot.add(chassisGroup);
+
+      // Very Light Semi-Transparent Slope/Tilt Reference Plane attached beneath car
+      const tiltPlaneGeo = new THREE.PlaneGeometry(2.4, 4.8);
+      const tiltPlaneMat = new THREE.MeshBasicMaterial({
+        color: 0x0284c7,
+        transparent: true,
+        opacity: 0.22,
+        side: THREE.DoubleSide,
+        wireframe: false
+      });
+      const tiltPlaneMesh = new THREE.Mesh(tiltPlaneGeo, tiltPlaneMat);
+      tiltPlaneMesh.rotation.x = -Math.PI / 2;
+      tiltPlaneMesh.position.y = 0.06;
+      vehicleRoot.add(tiltPlaneMesh);
+
+      // Perpendicular Cross-Section Roll/Tilt Plane to demonstrate steering roll & lateral G-force
+      const perpPlaneGeo = new THREE.PlaneGeometry(2.6, 2.0);
+      const perpPlaneMat = new THREE.MeshBasicMaterial({
+        color: 0xd97706,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        wireframe: false
+      });
+      const perpPlaneMesh = new THREE.Mesh(perpPlaneGeo, perpPlaneMat);
+      perpPlaneMesh.position.set(0, 0.75, 0.1);
+      vehicleRoot.add(perpPlaneMesh);
+
+      // Realistic Vehicle Body Styling (Aerodynamic Sports Sedan with Metallic Paint & Sculpted Curves)
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        metalness: 0.82,
+        roughness: 0.15,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.1
+      });
+      const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.46, 4.2), bodyMat);
+      lowerBody.position.y = 0.53;
+      lowerBody.castShadow = true;
+      chassisGroup.add(lowerBody);
+
+      // Sculpted Hood & Trunk
+      const hood = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.26, 1.35), bodyMat);
+      hood.position.set(0, 0.74, 1.22);
+      hood.castShadow = true;
+      chassisGroup.add(hood);
+
+      const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.26, 1.05), bodyMat);
+      trunk.position.set(0, 0.74, -1.42);
+      trunk.castShadow = true;
+      chassisGroup.add(trunk);
+
+      // Aerodynamic Front Splitter & Rear Diffuser
+      const carbonMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4, metalness: 0.5 });
+      const splitter = new THREE.Mesh(new THREE.BoxGeometry(1.86, 0.06, 0.35), carbonMat);
+      splitter.position.set(0, 0.32, 2.12);
+      chassisGroup.add(splitter);
+
+      const diffuser = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.12, 0.28), carbonMat);
+      diffuser.position.set(0, 0.36, -2.12);
+      chassisGroup.add(diffuser);
+
+      // Sleek Cabin Glasshouse (Windshield, Side Windows, Rear Glass)
+      const cabinMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        metalness: 0.92,
+        roughness: 0.08,
+        transparent: true,
+        opacity: 0.88
+      });
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.5, 2.1), cabinMat);
+      cabin.position.set(0, 1.01, -0.12);
+      cabin.castShadow = true;
+      chassisGroup.add(cabin);
+
+      // Side Mirrors with LED Turn Strips
+      const mirrorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7 });
+      const leftMirror = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.12), mirrorMat);
+      leftMirror.position.set(0.99, 0.88, 0.58);
+      chassisGroup.add(leftMirror);
+      const rightMirror = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.12), mirrorMat);
+      rightMirror.position.set(-0.99, 0.88, 0.58);
+      chassisGroup.add(rightMirror);
+
+      // Dual Polished Exhaust Tips
+      const exhaustMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.1 });
+      const exhL = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.28, 16), exhaustMat);
+      exhL.rotation.x = Math.PI / 2;
+      exhL.position.set(0.48, 0.38, -2.18);
+      chassisGroup.add(exhL);
+      const exhR = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.28, 16), exhaustMat);
+      exhR.rotation.x = Math.PI / 2;
+      exhR.position.set(-0.48, 0.38, -2.18);
+      chassisGroup.add(exhR);
+
+      // Roof LiDAR Pod
+      const lidarPod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.2, 0.14, 16),
+        new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+      );
+      lidarPod.position.set(0, 1.32, -0.15);
+      chassisGroup.add(lidarPod);
+
+      // Vehicle Lights
+      const headlightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      const brakeLightMat = new THREE.MeshBasicMaterial({ color: 0x7f1d1d });
+      const indLeftMat = new THREE.MeshBasicMaterial({ color: 0x78350f });
+      const indRightMat = new THREE.MeshBasicMaterial({ color: 0x78350f });
+
+      const makeLightBar = (w, h, d, mat, x, y, z) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        m.position.set(x, y, z);
+        chassisGroup.add(m);
+        return m;
+      };
+
+      makeLightBar(0.44, 0.12, 0.08, headlightMat, -0.63, 0.61, 2.12);
+      makeLightBar(0.44, 0.12, 0.08, headlightMat, 0.63, 0.61, 2.12);
+      makeLightBar(0.48, 0.14, 0.08, brakeLightMat, -0.61, 0.64, -2.12);
+      makeLightBar(0.48, 0.14, 0.08, brakeLightMat, 0.61, 0.64, -2.12);
+      makeLightBar(0.18, 0.12, 0.10, indLeftMat, -0.85, 0.61, 2.10);
+      makeLightBar(0.18, 0.12, 0.10, indLeftMat, -0.85, 0.65, -2.10);
+      makeLightBar(0.18, 0.12, 0.10, indRightMat, 0.85, 0.61, 2.10);
+      makeLightBar(0.18, 0.12, 0.10, indRightMat, 0.85, 0.65, -2.10);
+
+      // Realistic Multi-Spoke Alloy Wheels & Brake Calipers
+      const wheelGeo = new THREE.CylinderGeometry(0.39, 0.39, 0.30, 24);
+      wheelGeo.rotateZ(Math.PI / 2);
+      const tireMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+      const rimMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.15 });
+      const caliperMat = new THREE.MeshBasicMaterial({ color: 0xe11d48 });
+
+      function createRealisticWheel() {
+        const group = new THREE.Group();
+        const tire = new THREE.Mesh(wheelGeo, tireMat);
+        tire.castShadow = true;
+        group.add(tire);
+
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.32, 16), rimMat);
+        rim.rotation.z = Math.PI / 2;
+        group.add(rim);
+
+        // Brake Caliper
+        const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.12), caliperMat);
+        caliper.position.set(0, -0.12, 0.12);
+        group.add(caliper);
+
+        return group;
+      }
+
+      const flPivot = new THREE.Group();
+      flPivot.position.set(0.94, 0.39, 1.42);
+      const flWheel = createRealisticWheel();
+      flPivot.add(flWheel);
+      vehicleRoot.add(flPivot);
+
+      const frPivot = new THREE.Group();
+      frPivot.position.set(-0.94, 0.39, 1.42);
+      const frWheel = createRealisticWheel();
+      frPivot.add(frWheel);
+      vehicleRoot.add(frPivot);
+
+      const rlWheel = createRealisticWheel();
+      rlWheel.position.set(0.94, 0.39, -1.42);
+      vehicleRoot.add(rlWheel);
+
+      const rrWheel = createRealisticWheel();
+      rrWheel.position.set(-0.94, 0.39, -1.42);
+      vehicleRoot.add(rrWheel);
+
+      // Sonar Sensors
+      const sonarSensors = [
+        { id: 'F1', lx: 0.65, lz: 2.12, yaw: 0.25 },
+        { id: 'F2', lx: 0.22, lz: 2.14, yaw: 0.06 },
+        { id: 'F3', lx: -0.22, lz: 2.14, yaw: -0.06 },
+        { id: 'F4', lx: -0.65, lz: 2.12, yaw: -0.25 },
+        { id: 'R1', lx: -0.92, lz: 1.05, yaw: -Math.PI * 0.5 },
+        { id: 'R2', lx: -0.92, lz: -1.05, yaw: -Math.PI * 0.5 },
+        { id: 'B1', lx: -0.65, lz: -2.12, yaw: Math.PI + 0.25 },
+        { id: 'B2', lx: -0.22, lz: -2.14, yaw: Math.PI + 0.06 },
+        { id: 'B3', lx: 0.22, lz: -2.14, yaw: Math.PI - 0.06 },
+        { id: 'B4', lx: 0.65, lz: -2.12, yaw: Math.PI - 0.25 },
+        { id: 'L1', lx: 0.92, lz: -1.05, yaw: Math.PI * 0.5 },
+        { id: 'L2', lx: 0.92, lz: 1.05, yaw: Math.PI * 0.5 }
+      ];
+
+      const sonarBeamMeshes = sonarSensors.map((s) => {
+        const coneGeo = new THREE.ConeGeometry(0.65, 1.0, 12, 1, true);
+        coneGeo.translate(0, -0.5, 0);
+        coneGeo.rotateX(-Math.PI / 2);
+        const coneMat = new THREE.MeshBasicMaterial({
+          color: 0x059669,
+          transparent: true,
+          opacity: 0.14,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const mesh = new THREE.Mesh(coneGeo, coneMat);
+        mesh.position.set(s.lx, 0.45, s.lz);
+        mesh.rotation.y = s.yaw;
+        vehicleRoot.add(mesh);
+        return mesh;
+      });
+
+      const MAX_TRAIL_POINTS = 260;
+      const trailPositions = new Float32Array(MAX_TRAIL_POINTS * 3);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      const trailMat = new THREE.LineBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.85 });
+      const trailLine = new THREE.Line(trailGeo, trailMat);
+      trailLine.frustumCulled = false;
+      scene.add(trailLine);
+      let trailCount = 0;
+      let trailTimer = 0;
+
+      function pushTrailPoint(vec) {
+        if (trailCount < MAX_TRAIL_POINTS) {
+          trailPositions[trailCount * 3] = vec.x;
+          trailPositions[trailCount * 3 + 1] = vec.y + 0.09;
+          trailPositions[trailCount * 3 + 2] = vec.z;
+          trailCount++;
+        } else {
+          for (let i = 0; i < (MAX_TRAIL_POINTS - 1) * 3; i++) {
+            trailPositions[i] = trailPositions[i + 3];
+          }
+          const idx = (MAX_TRAIL_POINTS - 1) * 3;
+          trailPositions[idx] = vec.x;
+          trailPositions[idx + 1] = vec.y + 0.09;
+          trailPositions[idx + 2] = vec.z;
+        }
+        trailGeo.setDrawRange(0, trailCount);
+        trailGeo.attributes.position.needsUpdate = true;
+      }
+
+      // -----------------------------------------------------------------------
+      // 4. ORBIT & CAMERA CONTROLS
+      // -----------------------------------------------------------------------
+      let orbitYaw = 0.0;
+      let orbitPitch = 0.38;
+      let orbitDist = 14.5;
+      let isDragging = false;
+      let prevMouse = { x: 0, y: 0 };
+
+      container.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        prevMouse = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('mouseup', () => { isDragging = false; });
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevMouse.x;
+        const dy = e.clientY - prevMouse.y;
+        prevMouse = { x: e.clientX, y: e.clientY };
+        orbitYaw -= dx * 0.007;
+        orbitPitch = THREE.MathUtils.clamp(orbitPitch + dy * 0.007, 0.08, 1.45);
+      });
+
+      container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+      }, { passive: true });
+      container.addEventListener('touchend', () => { isDragging = false; });
+      container.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - prevMouse.x;
+        const dy = e.touches[0].clientY - prevMouse.y;
+        prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        orbitYaw -= dx * 0.007;
+        orbitPitch = THREE.MathUtils.clamp(orbitPitch + dy * 0.007, 0.08, 1.45);
+      }, { passive: true });
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        orbitDist = THREE.MathUtils.clamp(orbitDist + e.deltaY * 0.012, 5, 65);
+      }, { passive: false });
+
+      // -----------------------------------------------------------------------
+      // 5. SENSOR RENDERERS (GYRO, ACCEL, SONAR, SPEEDO)
+      // -----------------------------------------------------------------------
+      const gyroCanvas = document.getElementById('canvas-gyro');
+      const gyroCtx = gyroCanvas.getContext('2d');
+      const accelCanvas = document.getElementById('canvas-accel');
+      const accelCtx = accelCanvas.getContext('2d');
+      const sonarCanvas = document.getElementById('canvas-sonar');
+      const sonarCtx = sonarCanvas.getContext('2d');
+      const speedoCanvas = document.getElementById('canvas-speedometer');
+      const speedoCtx = speedoCanvas.getContext('2d');
+
+      function initSensorCanvases() {
+        [gyroCanvas, accelCanvas].forEach((c) => {
+          c.width = 160;
+          c.height = 160;
+        });
+        if (sonarCanvas) {
+          sonarCanvas.width = 130;
+          sonarCanvas.height = 150;
+        }
+        if (speedoCanvas) {
+          speedoCanvas.width = 200;
+          speedoCanvas.height = 200;
+        }
+      }
+      initSensorCanvases();
+
+      function renderSpeedometer(speedKmh, engineRpm) {
+        if (!speedoCtx) return;
+        const w = speedoCanvas.width;
+        const h = speedoCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2 + 6;
+        const r = w * 0.42;
+
+        const maxSpeed = 140;
+        const startAngle = Math.PI * 0.75;
+        const endAngle = Math.PI * 2.25;
+        const totalSweep = endAngle - startAngle;
+        const speedFrac = THREE.MathUtils.clamp(speedKmh / maxSpeed, 0, 1);
+        const currentAngle = startAngle + speedFrac * totalSweep;
+
+        speedoCtx.clearRect(0, 0, w, h);
+
+        speedoCtx.strokeStyle = '#cbd5e1';
+        speedoCtx.lineWidth = 3;
+        speedoCtx.beginPath();
+        speedoCtx.arc(cx, cy, r + 6, startAngle, endAngle);
+        speedoCtx.stroke();
+
+        speedoCtx.strokeStyle = '#e2e8f0';
+        speedoCtx.lineWidth = 10;
+        speedoCtx.lineCap = 'round';
+        speedoCtx.beginPath();
+        speedoCtx.arc(cx, cy, r - 4, startAngle, endAngle);
+        speedoCtx.stroke();
+
+        const arcColor = speedKmh > 105 ? '#e11d48' : speedKmh > 75 ? '#d97706' : '#0284c7';
+        speedoCtx.strokeStyle = arcColor;
+        speedoCtx.lineWidth = 10;
+        speedoCtx.lineCap = 'round';
+        speedoCtx.beginPath();
+        speedoCtx.arc(cx, cy, r - 4, startAngle, currentAngle);
+        speedoCtx.stroke();
+
+        speedoCtx.font = 'bold 10px JetBrains Mono, monospace';
+        speedoCtx.textAlign = 'center';
+        speedoCtx.textBaseline = 'middle';
+
+        for (let s = 0; s <= maxSpeed; s += 10) {
+          const frac = s / maxSpeed;
+          const ang = startAngle + frac * totalSweep;
+          const isMajor = s % 20 === 0;
+          const tickInner = isMajor ? r - 17 : r - 13;
+          const tickOuter = r - 9;
+
+          speedoCtx.strokeStyle = s >= 100 ? '#e11d48' : isMajor ? '#475569' : '#94a3b8';
+          speedoCtx.lineWidth = isMajor ? 2 : 1;
+          speedoCtx.beginPath();
+          speedoCtx.moveTo(cx + Math.cos(ang) * tickInner, cy + Math.sin(ang) * tickInner);
+          speedoCtx.lineTo(cx + Math.cos(ang) * tickOuter, cy + Math.sin(ang) * tickOuter);
+          speedoCtx.stroke();
+
+          if (isMajor) {
+            const labelR = r - 29;
+            speedoCtx.fillStyle = s >= 100 ? '#be123c' : '#334155';
+            speedoCtx.fillText(s.toString(), cx + Math.cos(ang) * labelR, cy + Math.sin(ang) * labelR);
+          }
+        }
+
+        const rpmFrac = THREE.MathUtils.clamp((engineRpm - 800) / 6200, 0, 1);
+        const rpmStart = Math.PI * 0.22;
+        const rpmEnd = Math.PI * 0.78;
+        speedoCtx.strokeStyle = '#e2e8f0';
+        speedoCtx.lineWidth = 4;
+        speedoCtx.beginPath();
+        speedoCtx.arc(cx, cy, r * 0.56, rpmStart, rpmEnd);
+        speedoCtx.stroke();
+
+        speedoCtx.strokeStyle = rpmFrac > 0.8 ? '#e11d48' : '#059669';
+        speedoCtx.lineWidth = 4;
+        speedoCtx.beginPath();
+        speedoCtx.arc(cx, cy, r * 0.56, rpmEnd - rpmFrac * (rpmEnd - rpmStart), rpmEnd);
+        speedoCtx.stroke();
+
+        speedoCtx.save();
+        speedoCtx.translate(cx, cy);
+        speedoCtx.rotate(currentAngle);
+        speedoCtx.fillStyle = '#e11d48';
+        speedoCtx.beginPath();
+        speedoCtx.moveTo(-10, -2.5);
+        speedoCtx.lineTo(r - 12, 0);
+        speedoCtx.lineTo(-10, 2.5);
+        speedoCtx.closePath();
+        speedoCtx.fill();
+        speedoCtx.restore();
+
+        speedoCtx.fillStyle = '#ffffff';
+        speedoCtx.strokeStyle = '#cbd5e1';
+        speedoCtx.lineWidth = 2;
+        speedoCtx.beginPath();
+        speedoCtx.arc(cx, cy, 22, 0, Math.PI * 2);
+        speedoCtx.fill();
+        speedoCtx.stroke();
+
+        speedoCtx.fillStyle = '#0f172a';
+        speedoCtx.font = 'bold 15px JetBrains Mono, monospace';
+        speedoCtx.fillText(Math.round(speedKmh).toString(), cx, cy - 2);
+
+        speedoCtx.fillStyle = '#64748b';
+        speedoCtx.font = 'bold 8px JetBrains Mono, monospace';
+        speedoCtx.fillText('KM/H', cx, cy + 10);
+
+        speedoCtx.fillStyle = '#b45309';
+        speedoCtx.font = 'bold 11px JetBrains Mono, monospace';
+        speedoCtx.fillText(`GEAR [${state.gear}]`, cx, cy + r * 0.78);
+      }
+
+      function renderGyroscope() {
+        const w = gyroCanvas.width;
+        const h = gyroCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = w * 0.44;
+
+        gyroCtx.clearRect(0, 0, w, h);
+        gyroCtx.save();
+        gyroCtx.beginPath();
+        gyroCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        gyroCtx.clip();
+
+        gyroCtx.translate(cx, cy);
+        gyroCtx.rotate(-state.roll);
+        const pitchOffset = THREE.MathUtils.clamp(state.pitch * 95, -r * 0.8, r * 0.8);
+
+        gyroCtx.fillStyle = '#bae6fd';
+        gyroCtx.fillRect(-r * 1.5, -r * 1.5, r * 3, r * 1.5 + pitchOffset);
+
+        gyroCtx.fillStyle = '#fed7aa';
+        gyroCtx.fillRect(-r * 1.5, pitchOffset, r * 3, r * 1.5);
+
+        gyroCtx.strokeStyle = '#0284c7';
+        gyroCtx.lineWidth = 2;
+        gyroCtx.beginPath();
+        gyroCtx.moveTo(-r * 1.4, pitchOffset);
+        gyroCtx.lineTo(r * 1.4, pitchOffset);
+        gyroCtx.stroke();
+
+        gyroCtx.restore();
+
+        gyroCtx.strokeStyle = '#b45309';
+        gyroCtx.lineWidth = 2.2;
+        gyroCtx.beginPath();
+        gyroCtx.moveTo(cx - 26, cy);
+        gyroCtx.lineTo(cx - 8, cy);
+        gyroCtx.lineTo(cx - 4, cy + 5);
+        gyroCtx.moveTo(cx + 26, cy);
+        gyroCtx.lineTo(cx + 8, cy);
+        gyroCtx.lineTo(cx + 4, cy + 5);
+        gyroCtx.stroke();
+
+        gyroCtx.strokeStyle = '#94a3b8';
+        gyroCtx.lineWidth = 1.5;
+        gyroCtx.beginPath();
+        gyroCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        gyroCtx.stroke();
+      }
+
+      function renderAccelerometer() {
+        const w = accelCanvas.width;
+        const h = accelCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const r = w * 0.44;
+
+        accelCtx.clearRect(0, 0, w, h);
+
+        accelCtx.strokeStyle = '#cbd5e1';
+        accelCtx.lineWidth = 1;
+        [0.5, 1.0].forEach((ringFrac) => {
+          accelCtx.beginPath();
+          accelCtx.arc(cx, cy, r * ringFrac, 0, Math.PI * 2);
+          accelCtx.stroke();
+        });
+
+        accelCtx.beginPath();
+        accelCtx.moveTo(cx - r, cy);
+        accelCtx.lineTo(cx + r, cy);
+        accelCtx.moveTo(cx, cy - r);
+        accelCtx.lineTo(cx, cy + r);
+        accelCtx.stroke();
+
+        const maxG = 1.2;
+        const gxNorm = THREE.MathUtils.clamp(state.gLat / maxG, -1, 1);
+        const gyNorm = THREE.MathUtils.clamp(-state.gLong / maxG, -1, 1);
+        const dotX = cx + gxNorm * r * 0.88;
+        const dotY = cy + gyNorm * r * 0.88;
+
+        accelCtx.strokeStyle = 'rgba(2, 132, 199, 0.6)';
+        accelCtx.lineWidth = 1.8;
+        accelCtx.beginPath();
+        accelCtx.moveTo(cx, cy);
+        accelCtx.lineTo(dotX, dotY);
+        accelCtx.stroke();
+
+        if (Number.isFinite(dotX) && Number.isFinite(dotY)) {
+          const grad = accelCtx.createRadialGradient(dotX, dotY, 1, dotX, dotY, 10);
+          grad.addColorStop(0, '#0284c7');
+          grad.addColorStop(0.5, '#38bdf8');
+          grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+          accelCtx.fillStyle = grad;
+          accelCtx.beginPath();
+          accelCtx.arc(dotX, dotY, 10, 0, Math.PI * 2);
+          accelCtx.fill();
+        }
+      }
+
+      function updateAndRenderSonar() {
+        const maxSonarRange = 8.0;
+        const beamHalfAngle = THREE.MathUtils.degToRad(24);
+        let minDetected = maxSonarRange;
+
+        sonarSensors.forEach((s, idx) => {
+          const localVec = new THREE.Vector3(s.lx, 0, s.lz).applyAxisAngle(new THREE.Vector3(0, 1, 0), state.heading);
+          const worldX = state.pos.x + localVec.x;
+          const worldZ = state.pos.z + localVec.z;
+          const beamHeading = state.heading + s.yaw;
+
+          let dist = maxSonarRange;
+          obstacles.forEach((obs) => {
+            const dx = obs.x - worldX;
+            const dz = obs.z - worldZ;
+            const centerDist = Math.hypot(dx, dz) - obs.radius;
+            if (centerDist < dist && centerDist > 0) {
+              const angleToObs = Math.atan2(dx, dz);
+              let relAngle = angleToObs - beamHeading;
+              while (relAngle > Math.PI) relAngle -= Math.PI * 2;
+              while (relAngle < -Math.PI) relAngle += Math.PI * 2;
+              if (Math.abs(relAngle) <= beamHalfAngle) {
+                dist = Math.max(0.15, centerDist);
+              }
+            }
+          });
+
+          state.sonarRanges[idx] = dist;
+          if (dist < minDetected) minDetected = dist;
+
+          const beamMesh = sonarBeamMeshes[idx];
+          if (beamMesh) {
+            const visualLen = Math.min(dist, 4.5);
+            beamMesh.scale.set(visualLen * 0.45, visualLen * 0.45, visualLen);
+            if (dist < 2.5) {
+              beamMesh.material.color.setHex(0xe11d48);
+              beamMesh.material.opacity = 0.34;
+            } else if (dist < 5.0) {
+              beamMesh.material.color.setHex(0xd97706);
+              beamMesh.material.opacity = 0.24;
+            } else {
+              beamMesh.material.color.setHex(0x059669);
+              beamMesh.material.opacity = 0.14;
+            }
+          }
+
+          const cellEl = document.getElementById(`snr-${idx}`);
+          if (cellEl) {
+            cellEl.textContent = `${dist.toFixed(1)}m`;
+            cellEl.className = dist < 2.5
+              ? 'text-rose-600 font-bold'
+              : dist < 5.0
+                ? 'text-amber-700 font-bold'
+                : 'text-emerald-700 font-semibold';
+          }
+        });
+
+        const minHeaderEl = document.getElementById('val-sonar-min');
+        if (minHeaderEl) {
+          minHeaderEl.textContent = minDetected >= maxSonarRange ? 'MIN: >8.00m' : `MIN: ${minDetected.toFixed(2)}m`;
+          minHeaderEl.className = minDetected < 2.5
+            ? 'text-[9px] font-mono text-rose-600 font-bold animate-pulse'
+            : minDetected < 5.0
+              ? 'text-[9px] font-mono text-amber-700 font-bold'
+              : 'text-[9px] font-mono text-emerald-700 font-bold';
+        }
+
+        if (!sonarCtx) return;
+        const w = sonarCanvas.width;
+        const h = sonarCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const scalePx = 6.8;
+
+        sonarCtx.clearRect(0, 0, w, h);
+
+        sonarCtx.strokeStyle = '#cbd5e1';
+        sonarCtx.lineWidth = 1;
+        [2.5, 5.0, 8.0].forEach((rMeters) => {
+          sonarCtx.beginPath();
+          sonarCtx.arc(cx, cy, rMeters * scalePx, 0, Math.PI * 2);
+          sonarCtx.stroke();
+        });
+
+        sonarSensors.forEach((s, idx) => {
+          const dist = state.sonarRanges[idx];
+          const sx = cx - s.lx * scalePx;
+          const sy = cy - s.lz * scalePx;
+          const canvasAngle = -Math.PI / 2 - s.yaw;
+          const coneRadius = dist * scalePx;
+
+          const color = dist < 2.5
+            ? 'rgba(225, 29, 72, 0.35)'
+            : dist < 5.0
+              ? 'rgba(217, 119, 6, 0.3)'
+              : 'rgba(5, 150, 105, 0.18)';
+          const strokeCol = dist < 2.5 ? '#e11d48' : dist < 5.0 ? '#d97706' : '#059669';
+
+          sonarCtx.beginPath();
+          sonarCtx.moveTo(sx, sy);
+          sonarCtx.arc(sx, sy, coneRadius, canvasAngle - 0.26, canvasAngle + 0.26);
+          sonarCtx.closePath();
+          sonarCtx.fillStyle = color;
+          sonarCtx.fill();
+
+          sonarCtx.beginPath();
+          sonarCtx.arc(sx, sy, coneRadius, canvasAngle - 0.26, canvasAngle + 0.26);
+          sonarCtx.strokeStyle = strokeCol;
+          sonarCtx.lineWidth = 1.4;
+          sonarCtx.stroke();
+        });
+
+        const vehW = 1.82 * scalePx;
+        const vehL = 4.1 * scalePx;
+        sonarCtx.fillStyle = '#f8fafc';
+        sonarCtx.strokeStyle = '#0284c7';
+        sonarCtx.lineWidth = 1.5;
+        sonarCtx.fillRect(cx - vehW / 2, cy - vehL / 2, vehW, vehL);
+        sonarCtx.strokeRect(cx - vehW / 2, cy - vehL / 2, vehW, vehL);
+      }
+
+      // -----------------------------------------------------------------------
+      // 6. 8 CORNER CAMERAS & TELEMETRY STREAM
+      // -----------------------------------------------------------------------
+      const cornerCams = [
+        { name: 'FL-FWD', localPos: new THREE.Vector3(0.85, 0.75, 2.05), yawOffset: 0.28 },
+        { name: 'FR-FWD', localPos: new THREE.Vector3(-0.85, 0.75, 2.05), yawOffset: -0.28 },
+        { name: 'FL-SIDE', localPos: new THREE.Vector3(0.92, 0.75, 1.45), yawOffset: Math.PI * 0.45 },
+        { name: 'FR-SIDE', localPos: new THREE.Vector3(-0.92, 0.75, 1.45), yawOffset: -Math.PI * 0.45 },
+        { name: 'RL-SIDE', localPos: new THREE.Vector3(0.92, 0.75, -1.45), yawOffset: Math.PI * 0.62 },
+        { name: 'RR-SIDE', localPos: new THREE.Vector3(-0.92, 0.75, -1.45), yawOffset: -Math.PI * 0.62 },
+        { name: 'RL-REAR', localPos: new THREE.Vector3(0.85, 0.75, -2.05), yawOffset: Math.PI - 0.28 },
+        { name: 'RR-REAR', localPos: new THREE.Vector3(-0.85, 0.75, -2.05), yawOffset: -Math.PI + 0.28 }
+      ];
+
+      const camCanvases = cornerCams.map((_, idx) => {
+        const c = document.getElementById(`cam-canvas-${idx}`);
+        if (c) {
+          c.width = 220;
+          c.height = 110;
+        }
+        return c ? c.getContext('2d') : null;
+      });
+
+      function updateAndRenderCornerCameras() {
+        const fovRad = THREE.MathUtils.degToRad(78);
+        const halfFov = fovRad * 0.5;
+        const maxRange = 28.0;
+        const prof = ROAD_PROFILES[state.roadType];
+
+        const skyHex = '#' + prof.skyColor.toString(16).padStart(6, '0');
+        const groundHex = '#' + prof.groundColor.toString(16).padStart(6, '0');
+        const roadHex = '#' + prof.roadColor.toString(16).padStart(6, '0');
+        const markHex = '#' + prof.markingColor.toString(16).padStart(6, '0');
+
+        // Helper: project a 3D world point (wx, wy, wz) into camera 2D screen space
+        const projectToCam = (wx, wy, wz, camPos, camHeading, w, h, horizonY) => {
+          const dx = wx - camPos.x;
+          const dz = wz - camPos.z;
+          const sinH = Math.sin(camHeading);
+          const cosH = Math.cos(camHeading);
+          // Forward depth along camera optical axis & lateral offset
+          const depth = dx * sinH + dz * cosH;
+          const lateral = dx * cosH - dz * sinH;
+          if (depth <= 0.35 || depth > maxRange + 8) return null;
+
+          const focal = (w * 0.5) / Math.tan(halfFov);
+          const sx = w * 0.5 - (lateral / depth) * focal;
+          const sy = horizonY - ((wy - camPos.y) / depth) * focal;
+          return { x: sx, y: sy, depth, focal };
+        };
+
+        cornerCams.forEach((cam, idx) => {
+          const ctx = camCanvases[idx];
+          if (!ctx) return;
+
+          const w = ctx.canvas.width;
+          const h = ctx.canvas.height;
+          // Dynamic pitch shift so camera horizon reacts to road grade
+          const horizonY = h * 0.46 + state.pitch * 48;
+
+          const worldCamPos = cam.localPos.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), state.heading).add(state.pos);
+          const camHeading = state.heading + cam.yawOffset;
+
+          ctx.clearRect(0, 0, w, h);
+
+          // 1. Sky & Terrain Backdrop
+          ctx.fillStyle = skyHex;
+          ctx.fillRect(0, 0, w, Math.max(0, horizonY));
+          ctx.fillStyle = groundHex;
+          ctx.fillRect(0, Math.max(0, horizonY), w, h);
+
+          // 2. Real 3D Perspective Road Ribbon & Center Dashes
+          const roadSamples = 64;
+          for (let i = 0; i < roadSamples; i++) {
+            const t1 = (i / roadSamples) * Math.PI * 2;
+            const t2 = ((i + 1) / roadSamples) * Math.PI * 2;
+            const p1 = getRoadCenterPoint(t1, prof.elevationScale);
+            const p2 = getRoadCenterPoint(t2, prof.elevationScale);
+            const { normal: n1 } = getRoadTangentAndNormal(t1, prof.elevationScale);
+            const { normal: n2 } = getRoadTangentAndNormal(t2, prof.elevationScale);
+
+            const l1 = projectToCam(p1.x + n1.x * ROAD_WIDTH * 0.5, p1.y, p1.z + n1.z * ROAD_WIDTH * 0.5, worldCamPos, camHeading, w, h, horizonY);
+            const r1 = projectToCam(p1.x - n1.x * ROAD_WIDTH * 0.5, p1.y, p1.z - n1.z * ROAD_WIDTH * 0.5, worldCamPos, camHeading, w, h, horizonY);
+            const l2 = projectToCam(p2.x + n2.x * ROAD_WIDTH * 0.5, p2.y, p2.z + n2.z * ROAD_WIDTH * 0.5, worldCamPos, camHeading, w, h, horizonY);
+            const r2 = projectToCam(p2.x - n2.x * ROAD_WIDTH * 0.5, p2.y, p2.z - n2.z * ROAD_WIDTH * 0.5, worldCamPos, camHeading, w, h, horizonY);
+
+            if (l1 && r1 && l2 && r2) {
+              ctx.fillStyle = roadHex;
+              ctx.beginPath();
+              ctx.moveTo(l1.x, l1.y);
+              ctx.lineTo(r1.x, r1.y);
+              ctx.lineTo(r2.x, r2.y);
+              ctx.lineTo(l2.x, l2.y);
+              ctx.closePath();
+              ctx.fill();
+
+              // Road edge curbs
+              ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(l1.x, l1.y);
+              ctx.lineTo(l2.x, l2.y);
+              ctx.moveTo(r1.x, r1.y);
+              ctx.lineTo(r2.x, r2.y);
+              ctx.stroke();
+
+              // Dashed centerline
+              if (i % 2 === 0) {
+                const c1 = projectToCam(p1.x, p1.y + 0.02, p1.z, worldCamPos, camHeading, w, h, horizonY);
+                const c2 = projectToCam(p2.x, p2.y + 0.02, p2.z, worldCamPos, camHeading, w, h, horizonY);
+                if (c1 && c2) {
+                  ctx.strokeStyle = markHex;
+                  ctx.lineWidth = Math.max(1, 2.5 / Math.max(1, c1.depth * 0.25));
+                  ctx.beginPath();
+                  ctx.moveTo(c1.x, c1.y);
+                  ctx.lineTo(c2.x, c2.y);
+                  ctx.stroke();
+                }
+              }
+            }
+          }
+
+          // Horizon line
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.25)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, horizonY);
+          ctx.lineTo(w, horizonY);
+          ctx.stroke();
+
+          // 3. Collect & Depth-Sort All Detectable Objects (Dynamic Hazards + Roadside Scenery)
+          const visibleDetections = [];
+          let minDist = maxRange;
+          let detectedLabel = 'NONE';
+
+          const allTargets = [
+            ...obstacles.map((o) => ({ ...o, isHazard: true, color: '#e11d48' })),
+            ...sceneryObjects
+          ];
+
+          allTargets.forEach((obj) => {
+            const groundY = getTerrainInfo(obj.x, obj.z).height;
+            const projBase = projectToCam(obj.x, groundY, obj.z, worldCamPos, camHeading, w, h, horizonY);
+            if (!projBase) return;
+
+            const dist = Math.max(0.2, Math.hypot(obj.x - worldCamPos.x, obj.z - worldCamPos.z) - obj.radius);
+            if (dist > maxRange) return;
+
+            const halfPixelW = (obj.radius / projBase.depth) * projBase.focal;
+            if (projBase.x + halfPixelW < 0 || projBase.x - halfPixelW > w) return;
+
+            const projTop = projectToCam(obj.x, groundY + obj.height, obj.z, worldCamPos, camHeading, w, h, horizonY);
+            const boxH = projTop ? Math.max(8, projBase.y - projTop.y) : (obj.height / projBase.depth) * projBase.focal;
+            const boxW = Math.max(8, halfPixelW * 2);
+
+            visibleDetections.push({
+              obj,
+              dist,
+              sx: projBase.x,
+              baseY: projBase.y,
+              boxW,
+              boxH
+            });
+
+            if (dist < minDist) {
+              minDist = dist;
+              detectedLabel = obj.label;
+            }
+          });
+
+          // Sort far-to-near for proper occlusion
+          visibleDetections.sort((a, b) => b.dist - a.dist);
+
+          // 4. Render 3D Object Silhouettes & Vision Detection Bounding Boxes
+          visibleDetections.forEach((det) => {
+            const { obj, dist, sx, baseY, boxW, boxH } = det;
+            const left = sx - boxW * 0.5;
+            const top = baseY - boxH;
+
+            // Render shaded object silhouette inside bounding box
+            ctx.fillStyle = obj.isHazard ? 'rgba(225, 29, 72, 0.72)' : 'rgba(51, 65, 85, 0.58)';
+            if (obj.label === 'PINE-TREE') {
+              ctx.beginPath();
+              ctx.moveTo(sx, top);
+              ctx.lineTo(left + boxW, baseY);
+              ctx.lineTo(left, baseY);
+              ctx.closePath();
+              ctx.fill();
+            } else {
+              ctx.fillRect(left, top, boxW, boxH);
+              if (obj.isHazard) {
+                // High-vis yellow hazard stripe
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(left, top + boxH * 0.35, boxW, boxH * 0.22);
+              }
+            }
+
+            // Bounding Box & Corner Brackets
+            const boxColor = obj.isHazard
+              ? (dist < 7.0 ? '#e11d48' : '#d97706')
+              : (dist < 6.0 ? '#d97706' : '#0284c7');
+            ctx.strokeStyle = boxColor;
+            ctx.lineWidth = obj.isHazard ? 2 : 1.4;
+            ctx.strokeRect(left, top, boxW, boxH);
+
+            // Classification Tag + Range Pill
+            const tagText = `${obj.label} ${dist.toFixed(1)}m`;
+            ctx.font = 'bold 8px JetBrains Mono, monospace';
+            const textW = ctx.measureText(tagText).width + 4;
+            const labelY = Math.max(18, top - 2);
+            ctx.fillStyle = obj.isHazard ? 'rgba(225, 29, 72, 0.9)' : 'rgba(15, 23, 42, 0.82)';
+            ctx.fillRect(left, labelY - 8, textW, 10);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(tagText, left + 2, labelY);
+          });
+
+          // Rain streaks in camera feed when rainy weather is active
+          if (prof.rainEnabled) {
+            ctx.strokeStyle = 'rgba(224, 242, 254, 0.55)';
+            ctx.lineWidth = 1;
+            for (let r = 0; r < 14; r++) {
+              const rx = ((r * 37 + Math.floor(state.simTime * 120)) % w);
+              const ry = ((r * 53 + Math.floor(state.simTime * 260)) % h);
+              ctx.beginPath();
+              ctx.moveTo(rx, ry);
+              ctx.lineTo(rx - 2, ry + 8);
+              ctx.stroke();
+            }
+          }
+
+          // Optical Center Crosshair
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(w / 2 - 5, h / 2);
+          ctx.lineTo(w / 2 + 5, h / 2);
+          ctx.moveTo(w / 2, h / 2 - 5);
+          ctx.lineTo(w / 2, h / 2 + 5);
+          ctx.stroke();
+
+          state.camRanges[idx] = minDist;
+          state.camTargets[idx] = detectedLabel;
+
+          const distEl = document.getElementById(`cam-dist-${idx}`);
+          if (distEl) {
+            if (minDist >= maxRange) {
+              distEl.textContent = 'CLR >28m';
+              distEl.className = 'absolute bottom-1 right-1.5 text-[9px] font-mono font-semibold text-emerald-700 bg-white/85 px-1 rounded border border-slate-200';
+            } else {
+              distEl.textContent = `${detectedLabel} ${minDist.toFixed(1)}m`;
+              distEl.className = minDist < 6.5
+                ? 'absolute bottom-1 right-1.5 text-[9px] font-mono text-rose-600 font-bold bg-white/95 px-1 rounded border border-rose-300'
+                : 'absolute bottom-1 right-1.5 text-[9px] font-mono text-amber-700 font-semibold bg-white/90 px-1 rounded border border-amber-300';
+            }
+          }
+        });
+      }
+
+      const sparkSpeedCtx = document.getElementById('spark-speed').getContext('2d');
+      const sparkYawCtx = document.getElementById('spark-yaw').getContext('2d');
+      const sparkLatGCtx = document.getElementById('spark-latg').getContext('2d');
+      [sparkSpeedCtx, sparkYawCtx, sparkLatGCtx].forEach((ctx) => {
+        ctx.canvas.width = 140;
+        ctx.canvas.height = 44;
+      });
+
+      function drawSparkline(ctx, data, color, minVal, maxVal) {
+        const w = ctx.canvas.width;
+        const h = ctx.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (minVal < 0 && maxVal > 0) {
+          const zeroY = h - ((0 - minVal) / (maxVal - minVal)) * h;
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, zeroY);
+          ctx.lineTo(w, zeroY);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        data.forEach((val, i) => {
+          const x = (i / (data.length - 1)) * w;
+          const norm = THREE.MathUtils.clamp((val - minVal) / (maxVal - minVal), 0, 1);
+          const y = h - norm * (h - 6) - 3;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      const feedEl = document.getElementById('telemetry-feed');
+      let lastTelemetryPush = 0;
+      let collisionFlashTimer = 0;
+
+      function pushTelemetryPacket(channel, colorClass, payload) {
+        if (state.pausedStream) return;
+        const feedContainer = document.getElementById('telemetry-feed');
+        if (!feedContainer) return;
+        if (state.feedFilter !== 'ALL' && state.feedFilter !== channel) return;
+
+        const row = document.createElement('div');
+        row.className = 'px-2 py-1 rounded bg-white border border-slate-200 flex items-start justify-between gap-2 leading-tight shadow-2xs';
+
+        const ts = state.simTime.toFixed(2).padStart(6, '0');
+        row.innerHTML = `
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-slate-400">[${ts}s]</span>
+            <span class="font-bold ${colorClass}">${channel}</span>
+          </div>
+          <div class="text-slate-700 text-right break-all">${payload}</div>
+        `;
+
+        feedContainer.prepend(row);
+        while (feedContainer.children.length > 45) {
+          feedContainer.removeChild(feedContainer.lastChild);
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 7. CONTROLS & EVENT LISTENERS
+      // -----------------------------------------------------------------------
+      function disengageAutopilotWithToast() {
+        if (!state.autopilot) return;
+        state.autopilot = false;
+        updateAutopilotButtonUI();
+        const toast = document.getElementById('sim-toast');
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 2000);
+      }
+
+      function updateAutopilotButtonUI() {
+        const btn = document.getElementById('btn-autopilot');
+        const dot = document.getElementById('autopilot-dot');
+        const lbl = document.getElementById('autopilot-label');
+        if (state.autopilot) {
+          btn.className = 'px-3 py-1 rounded font-semibold transition-all flex items-center gap-1.5 bg-sky-600 text-white border border-sky-700 shadow-sm';
+          dot.className = 'w-2 h-2 rounded-full bg-white animate-ping';
+          lbl.textContent = 'AUTOPILOT: ON';
+        } else {
+          btn.className = 'px-3 py-1 rounded font-semibold transition-all flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200';
+          dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+          lbl.textContent = 'AUTOPILOT: OFF';
+        }
+      }
+
+      // Slow Motion Slider Controller
+      const slowmoSlider = document.getElementById('slider-slowmo');
+      const slowmoVal = document.getElementById('val-slowmo');
+      slowmoSlider.addEventListener('input', (e) => {
+        state.timeScale = parseFloat(e.target.value);
+        slowmoVal.textContent = `${state.timeScale.toFixed(2)}x`;
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code in keys || e.key in keys) {
+          keys[e.key] = true;
+          keys[e.code] = true;
+          disengageAutopilotWithToast();
+        }
+        if (e.code === 'Space') {
+          e.preventDefault();
+          disengageAutopilotWithToast();
+          state.handbrake = !state.handbrake;
+          syncControlButtonsUI();
+          pushTelemetryPacket('CTRL', 'text-rose-600', `HANDBRAKE_ENGAGED=${state.handbrake}`);
+        }
+        if (e.key.toLowerCase() === 'q') {
+          state.indLeft = !state.indLeft;
+          if (state.indLeft) state.indRight = false;
+          syncControlButtonsUI();
+        }
+        if (e.key.toLowerCase() === 'e') {
+          state.indRight = !state.indRight;
+          if (state.indRight) state.indLeft = false;
+          syncControlButtonsUI();
+        }
+        if (e.key.toLowerCase() === 'h') {
+          state.hazard = !state.hazard;
+          syncControlButtonsUI();
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        if (e.code in keys || e.key in keys) {
+          keys[e.key] = false;
+          keys[e.code] = false;
+        }
+      });
+
+      document.getElementById('btn-grid-toggle').addEventListener('click', (e) => {
+        state.gridVisible = !state.gridVisible;
+        gridHelper.visible = state.gridVisible;
+        axesGroup.visible = state.gridVisible;
+        e.currentTarget.innerHTML = `<span>GRID: ${state.gridVisible ? 'ON' : 'OFF'}</span>`;
+        e.currentTarget.className = state.gridVisible
+          ? 'px-2.5 py-1 rounded font-semibold transition-all flex items-center gap-1.5 bg-sky-50 text-sky-700 border border-sky-300 hover:bg-sky-100'
+          : 'px-2.5 py-1 rounded font-semibold transition-all flex items-center gap-1.5 bg-slate-100 text-slate-500 border border-slate-300 hover:bg-slate-200';
+      });
+
+      document.querySelectorAll('.road-type-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const rType = btn.dataset.road;
+          rebuildRoadScenario(rType);
+          // Re-seat vehicle height cleanly on the newly contoured road surface
+          state.pos.y = getTerrainInfo(state.pos.x, state.pos.z).height;
+          document.querySelectorAll('.road-type-btn').forEach((b) => {
+            b.className = 'road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-100';
+          });
+          btn.className = 'road-type-btn px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-sky-600 text-white border border-sky-700';
+          pushTelemetryPacket('CTRL', 'text-sky-700', `ROAD_ENV -> ${ROAD_PROFILES[rType].label} (GRIP:${ROAD_PROFILES[rType].grip}μ)`);
+        });
+      });
+
+      document.getElementById('btn-autopilot').addEventListener('click', () => {
+        state.autopilot = !state.autopilot;
+        if (state.autopilot) {
+          state.gear = 'D';
+          state.handbrake = false;
+        }
+        updateAutopilotButtonUI();
+        syncControlButtonsUI();
+      });
+
+      document.getElementById('btn-reset-pos').addEventListener('click', () => {
+        alignVehicleToStart();
+        state.vel.set(0, 0, 0);
+        state.speed = 0;
+        state.yawRate = 0;
+        state.pitch = 0;
+        state.roll = 0;
+        state.steerAngle = 0;
+        state.targetSteer = 0;
+        trailCount = 0;
+        trailGeo.setDrawRange(0, 0);
+        pushTelemetryPacket('CTRL', 'text-sky-700', `POSE_RESET -> START OF CURLY CIRCUIT`);
+      });
+
+      document.getElementById('btn-spawn-obstacle').addEventListener('click', () => {
+        spawnDynamicObstacle();
+      });
+
+      document.getElementById('btn-clear-obstacles').addEventListener('click', () => {
+        clearDynamicObstacles();
+      });
+
+      document.querySelectorAll('.cam-mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.cameraMode = btn.dataset.cam;
+          document.querySelectorAll('.cam-mode-btn').forEach((b) => {
+            b.className = 'cam-mode-btn px-2 py-1 rounded text-[11px] font-mono font-semibold bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200';
+          });
+          btn.className = 'cam-mode-btn px-2 py-1 rounded text-[11px] font-mono font-semibold bg-sky-600 text-white border border-sky-700';
+        });
+      });
+
+      const steerSlider = document.getElementById('slider-steer');
+      steerSlider.addEventListener('input', (e) => {
+        disengageAutopilotWithToast();
+        state.targetSteer = THREE.MathUtils.degToRad(parseFloat(e.target.value));
+      });
+      document.getElementById('btn-center-steer').addEventListener('click', () => {
+        disengageAutopilotWithToast();
+        state.targetSteer = 0;
+        steerSlider.value = 0;
+      });
+
+      document.getElementById('btn-ind-left').addEventListener('click', () => {
+        state.indLeft = !state.indLeft;
+        if (state.indLeft) state.indRight = false;
+        syncControlButtonsUI();
+      });
+      document.getElementById('btn-ind-right').addEventListener('click', () => {
+        state.indRight = !state.indRight;
+        if (state.indRight) state.indLeft = false;
+        syncControlButtonsUI();
+      });
+      document.getElementById('btn-hazard').addEventListener('click', () => {
+        state.hazard = !state.hazard;
+        syncControlButtonsUI();
+      });
+
+      document.querySelectorAll('.gear-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          disengageAutopilotWithToast();
+          state.gear = btn.dataset.gear;
+          syncControlButtonsUI();
+          pushTelemetryPacket('CTRL', 'text-amber-700', `GEAR_SHIFT -> ${state.gear}`);
+        });
+      });
+
+      let pedalHold = { throttle: false, brake: false };
+      const bindHold = (id, key) => {
+        const el = document.getElementById(id);
+        const start = (e) => { e.preventDefault(); disengageAutopilotWithToast(); pedalHold[key] = true; };
+        const end = () => { pedalHold[key] = false; };
+        el.addEventListener('mousedown', start);
+        el.addEventListener('touchstart', start, { passive: false });
+        window.addEventListener('mouseup', end);
+        window.addEventListener('touchend', end);
+      };
+      bindHold('btn-accel', 'throttle');
+      bindHold('btn-brake', 'brake');
+
+      document.getElementById('btn-handbrake').addEventListener('click', () => {
+        disengageAutopilotWithToast();
+        state.handbrake = !state.handbrake;
+        syncControlButtonsUI();
+      });
+
+      document.getElementById('btn-stream-pause').addEventListener('click', (e) => {
+        state.pausedStream = !state.pausedStream;
+        e.target.textContent = state.pausedStream ? 'RESUME' : 'PAUSE';
+      });
+      document.getElementById('btn-stream-clear').addEventListener('click', () => {
+        feedEl.innerHTML = '';
+      });
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        const blob = new Blob([state.history.csvRows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vehicle_telemetry_${state.roadType}_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.querySelectorAll('.feed-filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.feedFilter = btn.dataset.filter;
+          document.querySelectorAll('.feed-filter-btn').forEach((b) => {
+            b.className = 'feed-filter-btn flex-1 py-1 rounded bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200';
+          });
+          btn.className = 'feed-filter-btn flex-1 py-1 rounded bg-sky-600 text-white border border-sky-700 font-semibold';
+        });
+      });
+
+      function syncControlButtonsUI() {
+        document.querySelectorAll('.gear-btn').forEach((btn) => {
+          if (btn.dataset.gear === state.gear) {
+            btn.className = 'gear-btn py-1 rounded bg-sky-600 text-white shadow-sm transition';
+          } else {
+            btn.className = 'gear-btn py-1 rounded text-slate-600 hover:text-slate-900 transition';
+          }
+        });
+
+        const hbBtn = document.getElementById('btn-handbrake');
+        const hbBadge = document.getElementById('handbrake-badge');
+        if (state.handbrake) {
+          hbBtn.className = 'flex-1 rounded bg-rose-50 border border-rose-400 p-1.5 flex flex-col items-center justify-between transition';
+          hbBadge.textContent = 'LOCK';
+          hbBadge.className = 'text-xs font-mono font-bold text-rose-600';
+        } else {
+          hbBtn.className = 'flex-1 rounded bg-white border border-slate-300 p-1.5 flex flex-col items-center justify-between hover:border-rose-400 transition';
+          hbBadge.textContent = 'OFF';
+          hbBadge.className = 'text-xs font-mono font-bold text-slate-400';
+        }
+
+        const leftBtn = document.getElementById('btn-ind-left');
+        const rightBtn = document.getElementById('btn-ind-right');
+        const hazBtn = document.getElementById('btn-hazard');
+
+        const leftActive = state.indLeft || state.hazard;
+        const rightActive = state.indRight || state.hazard;
+
+        leftBtn.className = leftActive
+          ? 'flex-1 py-1.5 rounded bg-amber-100 border border-amber-400 text-amber-700 font-mono text-xs font-bold flex items-center justify-center gap-1 blinker-active'
+          : 'flex-1 py-1.5 rounded bg-white border border-slate-300 text-slate-600 font-mono text-xs font-bold flex items-center justify-center gap-1';
+
+        rightBtn.className = rightActive
+          ? 'flex-1 py-1.5 rounded bg-amber-100 border border-amber-400 text-amber-700 font-mono text-xs font-bold flex items-center justify-center gap-1 blinker-active'
+          : 'flex-1 py-1.5 rounded bg-white border border-slate-300 text-slate-600 font-mono text-xs font-bold flex items-center justify-center gap-1';
+
+        hazBtn.className = state.hazard
+          ? 'px-2.5 py-1.5 rounded bg-rose-100 border border-rose-400 text-rose-700 font-mono text-xs font-bold blinker-active'
+          : 'px-2.5 py-1.5 rounded bg-white border border-slate-300 text-rose-600 font-mono text-xs font-bold';
+      }
+
+      // -----------------------------------------------------------------------
+      // 8. 60FPS PHYSICS & TELEMETRY SIMULATION STEP
+      // -----------------------------------------------------------------------
+      function updatePhysics(dt) {
+        state.simTime += dt;
+        state.blinkState = Math.floor(state.simTime * 2.8) % 2 === 0;
+        const prof = ROAD_PROFILES[state.roadType];
+
+        let frontMinSonar = 8.0;
+        for (let i = 0; i <= 3; i++) {
+          if (state.sonarRanges[i] < frontMinSonar) {
+            frontMinSonar = state.sonarRanges[i];
+          }
+        }
+        
+        obstacles.forEach((obs) => {
+          const forwardVec = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), state.heading);
+          const toObs = new THREE.Vector3(obs.x - state.pos.x, 0, obs.z - state.pos.z);
+          const forwardDist = toObs.dot(forwardVec);
+          const lateralDist = Math.abs(toObs.x * forwardVec.z - toObs.z * forwardVec.x);
+          if (forwardDist > 0 && forwardDist < 12.0 && lateralDist < (obs.radius + 1.3)) {
+            if (forwardDist < frontMinSonar) frontMinSonar = forwardDist;
+          }
+        });
+
+        let rearMinSonar = 8.0;
+        for (let i = 6; i <= 9; i++) {
+          if (state.sonarRanges[i] < rearMinSonar) rearMinSonar = state.sonarRanges[i];
+        }
+
+        if (state.autopilot) {
+          if (state.reverseEscapeTimer && state.reverseEscapeTimer > 0) {
+            state.reverseEscapeTimer -= dt;
+            state.gear = 'R';
+            state.throttle = 0.55;
+            state.brake = 0;
+            state.targetSteer = state.reverseEscapeSteer || 0.5;
+            if (state.reverseEscapeTimer <= 0 || rearMinSonar < 1.8) {
+              state.reverseEscapeTimer = 0;
+              state.gear = 'D';
+            }
+          } else if (frontMinSonar < 5.5) {
+            state.brake = 1.0;
+            state.throttle = 0;
+            if (Math.abs(state.speed) < 0.4) {
+              state.reverseEscapeTimer = 3.2;
+              state.reverseEscapeSteer = state.sonarRanges[0] < state.sonarRanges[3] ? 0.65 : -0.65;
+              state.gear = 'R';
+              pushTelemetryPacket('CTRL', 'text-rose-600', `OBSTACLE_AVOIDANCE // Emergency Brake & Shifting to REVERSE (R) to bypass hazard`);
+            }
+          } else {
+            // Enhanced precision lookahead for centered road tracking
+            let bestT = 0;
+            let minDistSq = Infinity;
+            const steps = 180;
+            for (let i = 0; i < steps; i++) {
+              const tTest = (i / steps) * Math.PI * 2;
+              const pt = getRoadCenterPoint(tTest, prof.elevationScale);
+              const dSq = (state.pos.x - pt.x) * (state.pos.x - pt.x) + (state.pos.z - pt.z) * (state.pos.z - pt.z);
+              if (dSq < minDistSq) {
+                minDistSq = dSq;
+                bestT = tTest;
+              }
+            }
+
+            const lookAheadT = bestT + 0.15;
+            const targetPt = getRoadCenterPoint(lookAheadT, prof.elevationScale);
+
+            const dx = targetPt.x - state.pos.x;
+            const dz = targetPt.z - state.pos.z;
+            const desiredHeading = Math.atan2(dx, dz);
+
+            let headingErr = desiredHeading - state.heading;
+            while (headingErr > Math.PI) headingErr -= Math.PI * 2;
+            while (headingErr < -Math.PI) headingErr += Math.PI * 2;
+
+            // Tight proportional-derivative steering gain to stay precisely centered on road
+            state.targetSteer = THREE.MathUtils.clamp(headingErr * 2.15, -VEH.maxSteerRad * 0.9, VEH.maxSteerRad * 0.9);
+            state.throttle = Math.abs(headingErr) > 0.4 ? 0.3 : 0.58;
+            state.brake = 0;
+            state.gear = 'D';
+            state.handbrake = false;
+
+            state.indLeft = state.targetSteer > 0.2;
+            state.indRight = state.targetSteer < -0.2;
+            syncControlButtonsUI();
+          }
+        } else {
+          const wantThrottle = (keys.w || keys.ArrowUp || pedalHold.throttle) ? 1.0 : 0.0;
+          const wantBrake = (keys.s || keys.ArrowDown || pedalHold.brake) ? 1.0 : 0.0;
+
+          state.throttle = THREE.MathUtils.lerp(state.throttle, wantThrottle, dt * 10);
+          state.brake = THREE.MathUtils.lerp(state.brake, wantBrake, dt * 12);
+
+          if (keys.a || keys.ArrowLeft) {
+            state.targetSteer = THREE.MathUtils.clamp(state.targetSteer + dt * 2.4, -VEH.maxSteerRad, VEH.maxSteerRad);
+          } else if (keys.d || keys.ArrowRight) {
+            state.targetSteer = THREE.MathUtils.clamp(state.targetSteer - dt * 2.4, -VEH.maxSteerRad, VEH.maxSteerRad);
+          } else if (!document.activeElement || document.activeElement.id !== 'slider-steer') {
+            const centerRate = 1.6 + Math.abs(state.speed) * 0.12;
+            state.targetSteer = THREE.MathUtils.lerp(state.targetSteer, 0, dt * centerRate);
+          }
+        }
+
+        state.steerAngle = THREE.MathUtils.lerp(state.steerAngle, state.targetSteer, dt * 12);
+        steerSlider.value = THREE.MathUtils.radToDeg(state.steerAngle).toFixed(1);
+
+        const prevSpeed = state.speed;
+        let driveAccel = 0;
+
+        if (state.gear === 'D') {
+          driveAccel = state.throttle * VEH.engineForce * prof.grip;
+        } else if (state.gear === 'R') {
+          driveAccel = -state.throttle * (VEH.engineForce * 0.65) * prof.grip;
+        }
+
+        const drag = -state.speed * VEH.dragCoeff * prof.dragMult - Math.sign(state.speed) * 0.45 * prof.dragMult;
+        let brakeDecel = 0;
+        if (state.brake > 0.01 && Math.abs(state.speed) > 0.05) {
+          brakeDecel = -Math.sign(state.speed) * state.brake * VEH.brakeForce * prof.grip;
+        }
+        if ((state.handbrake || state.gear === 'P') && Math.abs(state.speed) > 0.02) {
+          brakeDecel -= Math.sign(state.speed) * 32.0 * prof.grip;
+        }
+
+        let totalLongAccel = driveAccel + drag + brakeDecel;
+        state.speed += totalLongAccel * dt;
+
+        if (state.gear === 'P') state.speed = 0;
+        if (state.gear === 'D') state.speed = THREE.MathUtils.clamp(state.speed, -0.5, VEH.maxSpeedFwd);
+        if (state.gear === 'R') state.speed = THREE.MathUtils.clamp(state.speed, -VEH.maxSpeedRev, 0.5);
+        if (state.gear === 'N') state.speed = THREE.MathUtils.clamp(state.speed, -VEH.maxSpeedRev, VEH.maxSpeedFwd);
+
+        if (Math.abs(state.speed) < 0.03 && state.throttle < 0.05) {
+          state.speed = 0;
+        }
+
+        const actualLongAccel = (state.speed - prevSpeed) / dt;
+        state.gLong = THREE.MathUtils.lerp(state.gLong, actualLongAccel / 9.81, dt * 12);
+
+        const prevHeading = state.heading;
+        const driftFactor = state.handbrake ? 1.45 : (0.55 + 0.45 * prof.grip);
+        const angularVel = (state.speed / VEH.wheelbase) * Math.tan(state.steerAngle) * driftFactor;
+        state.heading += angularVel * dt;
+        state.yawRate = (state.heading - prevHeading) / dt;
+
+        const latAccel = state.speed * state.yawRate;
+        state.gLat = THREE.MathUtils.lerp(state.gLat, latAccel / 9.81, dt * 12);
+
+        const vx = Math.sin(state.heading) * state.speed;
+        const vz = Math.cos(state.heading) * state.speed;
+        state.pos.x = THREE.MathUtils.clamp(state.pos.x + vx * dt, -140, 140);
+        state.pos.z = THREE.MathUtils.clamp(state.pos.z + vz * dt, -140, 140);
+
+        const terrain = getTerrainInfo(state.pos.x, state.pos.z);
+        const prevY = state.pos.y;
+        state.pos.y = THREE.MathUtils.lerp(state.pos.y, terrain.height, dt * 16);
+        const vy = (state.pos.y - prevY) / dt;
+        state.gVert = THREE.MathUtils.lerp(state.gVert, 1.0 + (vy * 0.22), dt * 12);
+
+        // Vehicle body remains level (pitch = 0, roll = 0). Tilt plane demonstrates terrain slope & roll.
+        state.pitch = -terrain.slopeZ;
+        state.roll = state.gLat * 0.12;
+
+        let hasCollided = false;
+        const collisionRadius = 1.25;
+        obstacles.forEach((obs) => {
+          const d = Math.hypot(state.pos.x - obs.x, state.pos.z - obs.z);
+          if (d < collisionRadius + obs.radius) {
+            hasCollided = true;
+            const pushDirX = state.pos.x - obs.x;
+            const pushDirZ = state.pos.z - obs.z;
+            const len = Math.hypot(pushDirX, pushDirZ) || 1;
+            state.pos.x = obs.x + (pushDirX / len) * (collisionRadius + obs.radius);
+            state.pos.z = obs.z + (pushDirZ / len) * (collisionRadius + obs.radius);
+            
+            if (Math.abs(state.speed) > 1.5) {
+              state.speed *= -0.35;
+              pushTelemetryPacket('CTRL', 'text-rose-600', `COLLISION_IMPACT // Target: ${obs.label} at V=${(state.speed * 3.6).toFixed(1)} km/h`);
+            } else {
+              state.speed = 0;
+            }
+          }
+        });
+
+        const alertBanner = document.getElementById('collision-alert');
+        if (hasCollided) {
+          collisionFlashTimer = 1.2;
+          alertBanner.classList.remove('hidden');
+        } else if (collisionFlashTimer > 0) {
+          collisionFlashTimer -= dt;
+          if (collisionFlashTimer <= 0) {
+            alertBanner.classList.add('hidden');
+          }
+        }
+
+        // Apply transforms: vehicleRoot tracks position & heading. chassisGroup stays level. tiltPlaneMesh tilts with terrain. Perpendicular plane tilts with steering/lateral G roll.
+        vehicleRoot.position.copy(state.pos);
+        vehicleRoot.rotation.y = state.heading;
+        chassisGroup.rotation.set(0, 0, 0); // Always level
+        tiltPlaneMesh.rotation.x = -Math.PI / 2 + state.pitch;
+        tiltPlaneMesh.rotation.z = state.roll;
+
+        // Perpendicular roll plane rotates dynamically with steering angle and lateral G forces
+        const steeringRoll = -state.steerAngle * 0.65 - state.gLat * 0.18;
+        perpPlaneMesh.rotation.z = steeringRoll;
+        perpPlaneMesh.rotation.y = 0;
+
+        flPivot.rotation.y = state.steerAngle;
+        frPivot.rotation.y = state.steerAngle;
+        const slipMultiplier = state.throttle > 0.2 && prof.grip < 0.75 ? (1.25 / prof.grip) : 1.0;
+        const wheelAngVel = (state.speed / 0.38) * slipMultiplier;
+        state.wheelSpin += wheelAngVel * dt;
+        [flWheel, frWheel, rlWheel, rrWheel].forEach((w) => {
+          w.rotation.x = state.wheelSpin;
+        });
+
+        const baseRPM = Math.abs((wheelAngVel * 60) / (2 * Math.PI));
+        const turnDiff = state.steerAngle * 45;
+        state.wheelRPM.fl = Math.round(Math.max(0, baseRPM - turnDiff));
+        state.wheelRPM.fr = Math.round(Math.max(0, baseRPM + turnDiff));
+        state.wheelRPM.rl = state.handbrake ? 0 : Math.round(Math.max(0, baseRPM - turnDiff * 0.7));
+        state.wheelRPM.rr = state.handbrake ? 0 : Math.round(Math.max(0, baseRPM + turnDiff * 0.7));
+
+        brakeLightMat.color.setHex((state.brake > 0.05 || state.handbrake || hasCollided) ? 0xef4444 : 0x7f1d1d);
+        const leftLit = (state.indLeft || state.hazard) && state.blinkState;
+        const rightLit = (state.indRight || state.hazard) && state.blinkState;
+        indLeftMat.color.setHex(leftLit ? 0xf59e0b : 0x78350f);
+        indRightMat.color.setHex(rightLit ? 0xf59e0b : 0x78350f);
+
+        lidarPod.rotation.y += dt * 12;
+        updateRainParticles(dt);
+
+        trailTimer += dt;
+        if (trailTimer > 0.08 && Math.abs(state.speed) > 0.2) {
+          trailTimer = 0;
+          pushTrailPoint(state.pos);
+        }
+
+        updateMainCamera(dt);
+      }
+
+      function updateMainCamera(dt) {
+        if (state.cameraMode === 'chase') {
+          const desiredYaw = state.heading + Math.PI + orbitYaw * 0.45;
+          const dist = 11.5;
+          const height = 4.6;
+          const targetCamPos = new THREE.Vector3(
+            state.pos.x + Math.sin(desiredYaw) * dist,
+            state.pos.y + height,
+            state.pos.z + Math.cos(desiredYaw) * dist
+          );
+          camera.position.lerp(targetCamPos, dt * 7.5);
+          camera.lookAt(state.pos.x, state.pos.y + 1.1, state.pos.z);
+        } else if (state.cameraMode === 'top') {
+          const targetCamPos = new THREE.Vector3(state.pos.x, state.pos.y + 34, state.pos.z - 0.1);
+          camera.position.lerp(targetCamPos, dt * 8);
+          camera.lookAt(state.pos.x, state.pos.y, state.pos.z);
+        } else {
+          const cx = state.pos.x + orbitDist * Math.cos(orbitPitch) * Math.sin(orbitYaw);
+          const cy = state.pos.y + orbitDist * Math.sin(orbitPitch);
+          const cz = state.pos.z - orbitDist * Math.cos(orbitPitch) * Math.cos(orbitYaw);
+          camera.position.set(cx, cy, cz);
+          camera.lookAt(state.pos.x, state.pos.y + 0.9, state.pos.z);
+        }
+      }
+
+      function updateHUDReadouts() {
+        const mins = Math.floor(state.simTime / 60).toString().padStart(2, '0');
+        const secs = (state.simTime % 60).toFixed(1).padStart(4, '0');
+        document.getElementById('hud-sim-time').textContent = `${mins}:${secs}`;
+
+        const absSpeedMs = Math.abs(state.speed);
+        const speedKmh = Math.round(absSpeedMs * 3.6);
+        const engineRpm = state.gear === 'N'
+          ? Math.round(850 + state.throttle * 5200)
+          : Math.round(850 + (absSpeedMs / VEH.maxSpeedFwd) * 5800 + state.throttle * 600);
+
+        document.getElementById('hud-speed-kmh').textContent = speedKmh;
+        document.getElementById('hud-speed-ms').textContent = absSpeedMs.toFixed(1);
+        document.getElementById('hud-rpm').textContent = engineRpm;
+        renderSpeedometer(absSpeedMs * 3.6, engineRpm);
+
+        let hdgDeg = (THREE.MathUtils.radToDeg(state.heading) % 360 + 360) % 360;
+        document.getElementById('coord-x').textContent = state.pos.x.toFixed(2);
+        document.getElementById('coord-y').textContent = state.pos.y.toFixed(2);
+        document.getElementById('coord-z').textContent = state.pos.z.toFixed(2);
+        document.getElementById('coord-hdg').textContent = `${Math.round(hdgDeg).toString().padStart(3, '0')}°`;
+
+        const pitchDeg = THREE.MathUtils.radToDeg(state.pitch);
+        const rollDeg = THREE.MathUtils.radToDeg(state.roll);
+        document.getElementById('val-pitch').textContent = `${pitchDeg >= 0 ? '+' : ''}${pitchDeg.toFixed(1)}° (${state.pitchRate.toFixed(2)})`;
+        document.getElementById('val-roll').textContent = `${rollDeg >= 0 ? '+' : ''}${rollDeg.toFixed(1)}° (${state.rollRate.toFixed(2)})`;
+        document.getElementById('val-yaw').textContent = `${hdgDeg.toFixed(1)}° (${state.yawRate.toFixed(2)})`;
+
+        const totalG = Math.hypot(state.gLong, state.gLat, state.gVert);
+        document.getElementById('val-total-g').textContent = `${totalG.toFixed(2)} G`;
+        document.getElementById('val-gx').textContent = `${state.gLong >= 0 ? '+' : ''}${state.gLong.toFixed(2)} g`;
+        document.getElementById('val-gy').textContent = `${state.gLat >= 0 ? '+' : ''}${state.gLat.toFixed(2)} g`;
+        document.getElementById('val-gz').textContent = `${state.gVert >= 0 ? '+' : ''}${state.gVert.toFixed(2)} g`;
+
+        const steerDeg = THREE.MathUtils.radToDeg(state.steerAngle);
+        document.getElementById('val-steer-deg').textContent = `${steerDeg >= 0 ? '+' : ''}${steerDeg.toFixed(1)}°`;
+        document.getElementById('svg-steering-wheel').style.transform = `rotate(${-steerDeg * 3.5}deg)`;
+        document.getElementById('bar-throttle').style.height = `${Math.round(state.throttle * 100)}%`;
+        document.getElementById('bar-brake').style.height = `${Math.round(state.brake * 100)}%`;
+
+        document.getElementById('rpm-fl').textContent = state.wheelRPM.fl;
+        document.getElementById('rpm-fr').textContent = state.wheelRPM.fr;
+        document.getElementById('rpm-rl').textContent = state.wheelRPM.rl;
+        document.getElementById('rpm-rr').textContent = state.wheelRPM.rr;
+
+        if (state.simTime - lastTelemetryPush >= 0.1) {
+          lastTelemetryPush = state.simTime;
+
+          state.history.speed.push(speedKmh);
+          state.history.speed.shift();
+          state.history.yaw.push(THREE.MathUtils.radToDeg(state.yawRate));
+          state.history.yaw.shift();
+          state.history.latG.push(state.gLat);
+          state.history.latG.shift();
+
+          document.getElementById('spark-val-speed').textContent = `${speedKmh} km/h`;
+          document.getElementById('spark-val-yaw').textContent = `${THREE.MathUtils.radToDeg(state.yawRate).toFixed(1)}°/s`;
+          document.getElementById('spark-val-latg').textContent = `${state.gLat.toFixed(2)}g`;
+
+          drawSparkline(sparkSpeedCtx, state.history.speed, '#0284c7', 0, 125);
+          drawSparkline(sparkYawCtx, state.history.yaw, '#059669', -65, 65);
+          drawSparkline(sparkLatGCtx, state.history.latG, '#d97706', -1.2, 1.2);
+
+          state.history.csvRows.push(
+            `${state.simTime.toFixed(2)},${state.roadType},${state.pos.x.toFixed(2)},${state.pos.y.toFixed(2)},${state.pos.z.toFixed(2)},${speedKmh},${hdgDeg.toFixed(1)},${pitchDeg.toFixed(1)},${rollDeg.toFixed(1)},${state.gLong.toFixed(3)},${state.gLat.toFixed(3)},${state.gVert.toFixed(3)},${steerDeg.toFixed(1)},${state.gear}`
+          );
+          if (state.history.csvRows.length > 2000) state.history.csvRows.splice(1, 1);
+
+          const tick = Math.floor(state.simTime * 10);
+          if (tick % 4 === 0) {
+            pushTelemetryPacket(
+              'IMU',
+              'text-sky-700',
+              `9-AXIS[ACC:(${state.gLong.toFixed(2)},${state.gLat.toFixed(2)},${state.gVert.toFixed(2)}) GYRO:(${state.pitchRate.toFixed(2)},${state.rollRate.toFixed(2)},${state.yawRate.toFixed(2)}) MAG:(${hdgDeg.toFixed(0)}°)]`
+            );
+          } else if (tick % 4 === 1) {
+            const minSnr = Math.min(...state.sonarRanges);
+            const minSnrIdx = state.sonarRanges.indexOf(minSnr);
+            const snrId = sonarSensors[minSnrIdx].id;
+            pushTelemetryPacket(
+              'SONAR',
+              minSnr < 2.5 ? 'text-rose-600' : minSnr < 5.0 ? 'text-amber-700' : 'text-emerald-700',
+              `12CH_ECHO -> MIN:${snrId}(${minSnr >= 8.0 ? '>8.0m' : minSnr.toFixed(2) + 'm'}) F:[${state.sonarRanges.slice(0, 4).map(v => v.toFixed(1)).join(',')}]`
+            );
+          } else if (tick % 4 === 2) {
+            const minCamDist = Math.min(...state.camRanges);
+            const minCamIdx = state.camRanges.indexOf(minCamDist);
+            const obj = state.camTargets[minCamIdx];
+            pushTelemetryPacket(
+              'CAM',
+              minCamDist < 7.5 ? 'text-rose-600' : 'text-amber-700',
+              `CAM-0${minCamIdx + 1}(${cornerCams[minCamIdx].name}) -> OBJ:${obj} DIST:${minCamDist >= 28 ? '>28.0m' : minCamDist.toFixed(1) + 'm'}`
+            );
+          } else {
+            pushTelemetryPacket(
+              'CTRL',
+              'text-emerald-700',
+              `[${state.roadType.toUpperCase()}] POS(${state.pos.x.toFixed(1)},${state.pos.y.toFixed(1)},${state.pos.z.toFixed(1)}) V:${speedKmh}km/h STR:${steerDeg.toFixed(1)}°`
+            );
+          }
+        }
+      }
+
+      function handleResize() {
+        if (!container) return;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        }
+      }
+      window.addEventListener('resize', handleResize);
+
+      let lastFrameTime = performance.now();
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const rawDt = (now - lastFrameTime) / 1000;
+        lastFrameTime = now;
+        const dt = (rawDt > 0 ? Math.min(rawDt, 0.05) : 1 / 60) * state.timeScale;
+
+        updatePhysics(dt);
+        renderGyroscope();
+        renderAccelerometer();
+        updateAndRenderSonar();
+        updateAndRenderCornerCameras();
+        updateHUDReadouts();
+
+        renderer.render(scene, camera);
+      }
+
+      window.onload = function () {
+        handleResize();
+        updateAutopilotButtonUI();
+        syncControlButtonsUI();
+        pushTelemetryPacket('IMU', 'text-sky-700', 'SYSTEM_BOOT // LEVEL BODY & PREDICTIVE AEB ONLINE');
+        lastFrameTime = performance.now() - 16.67;
+        animate(performance.now());
+      };
+    })();
+  </script>
+</body>
+</html>
