@@ -391,9 +391,44 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.82rem;
     }
+
+    /* Navigation Tab Styling */
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0;
+    }
+    .nav-tab {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .nav-tab:hover {
+      color: var(--ocean-blue);
+    }
+    .nav-tab.active {
+      color: var(--ocean-blue);
+      border-bottom-color: var(--ocean-blue);
+    }
   </style>
 </head>
 <body>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <a href="./" class="nav-tab active">Home</a>
+    <a href="./autonomy/" class="nav-tab">Autonomy</a>
+  </div>
 
   <!-- Building in Progress Status Badge -->
   <div class="progress-banner">
@@ -624,27 +659,63 @@
         btn.disabled = true;
         btn.innerText = "Measuring...";
         sum.innerHTML = "Sampling live network bandwidth...";
+        mbps = 0;
+        netVal.innerText = "0.00";
 
         const start = performance.now();
         let bytes = 0;
+        let testFailed = false;
 
         try {
-          const res = await fetch("https://speed.cloudflare.com/__down?bytes=10000000&r=" + Math.random(), { cache: "no-store", mode: 'cors' });
-          const reader = res.body.getReader();
-          while(true) {
-            const {done, value} = await reader.read();
-            if(done || (performance.now() - start) > 3000) break;
-            bytes += value.byteLength;
-            mbps = parseFloat(((bytes * 8) / ((performance.now() - start) / 1000) / 1000000).toFixed(2));
-            netVal.innerText = mbps;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+          const res = await fetch("https://speed.cloudflare.com/__down?bytes=10000000&r=" + Math.random(), { 
+            cache: "no-store", 
+            mode: 'cors',
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!res.ok) {
+            testFailed = true;
+            sum.innerHTML = `<strong style="color:#ef4444;">Network Error:</strong> Server returned status ${res.status}. Unable to measure speed.`;
+            netVal.innerText = "—";
+          } else {
+            const reader = res.body.getReader();
+            while(true) {
+              const {done, value} = await reader.read();
+              const elapsedMs = performance.now() - start;
+              if(done || elapsedMs > 3000) break;
+              
+              if(value) {
+                bytes += value.byteLength;
+                mbps = parseFloat(((bytes * 8) / (elapsedMs / 1000) / 1000000).toFixed(2));
+                netVal.innerText = mbps;
+              }
+            }
+
+            if(bytes === 0) {
+              testFailed = true;
+              sum.innerHTML = `<strong style="color:#ef4444;">Network Error:</strong> No data received. Please check your connection.`;
+              netVal.innerText = "—";
+            }
           }
         } catch(e) {
-          mbps = 45.00;
-          netVal.innerText = "45.00";
+          testFailed = true;
+          if(e.name === 'AbortError') {
+            sum.innerHTML = `<strong style="color:#ef4444;">Timeout:</strong> Speed test exceeded 5 seconds. Network may be very slow or unavailable.`;
+          } else {
+            sum.innerHTML = `<strong style="color:#ef4444;">Connection Failed:</strong> ${e.message || 'Unable to reach speed test server'}. Check your internet connection.`;
+          }
+          netVal.innerText = "—";
         }
 
-        const ratio = Math.round(200000000 / 0.015);
-        sum.innerHTML = `Measured: <strong style="color:var(--ocean-blue);">${mbps} Mbps</strong>. Optical fiber signals travel ~200,000 km/s (<strong style="color:var(--ocean-blue);">${ratio.toLocaleString()}x faster</strong> than physical movement).`;
+        if(!testFailed && mbps > 0) {
+          const ratio = Math.round(200000000 / 0.015);
+          sum.innerHTML = `Measured: <strong style="color:var(--ocean-blue);">${mbps} Mbps</strong>. Optical fiber signals travel ~200,000 km/s (<strong style="color:var(--ocean-blue);">${ratio.toLocaleString()}x faster</strong> than physical movement).`;
+        }
 
         testing = false;
         btn.disabled = false;
