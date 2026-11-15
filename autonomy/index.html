@@ -470,7 +470,7 @@
         <!-- Bottom-Left HUD: Terrain Environment Selector & Obstacle Spawner -->
         <div class="absolute bottom-2.5 left-2.5 pointer-events-auto">
           <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg flex flex-col gap-1">
-            <div class="flex flex-nowrap items-center gap-1">
+            <div class="flex flex-nowrap items-center gap-1 overflow-x-auto">
               <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mr-1 whitespace-nowrap">ENV:</span>
               <button type="button" data-terrain="CITY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-900 text-white cursor-pointer hover:bg-slate-800 whitespace-nowrap">CITY</button>
               <button type="button" data-terrain="MOUNTAIN" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">MOUNTAIN</button>
@@ -479,15 +479,16 @@
               <button type="button" data-terrain="POTHOLES" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">POTHOLES</button>
               <button type="button" data-terrain="RAINY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">RAINY</button>
               <button type="button" data-terrain="DESERT" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">DESERT</button>
+              <button type="button" data-terrain="HILLY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">HILLY</button>
             </div>
 
-            <div class="flex flex-nowrap items-center gap-1">
-              <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mr-1 whitespace-nowrap">CIRCUIT:</span>
-              <button type="button" data-circuit="OVAL" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-sky-600 text-white cursor-pointer hover:bg-sky-700 whitespace-nowrap">OVAL</button>
-              <button type="button" data-circuit="RECTANGLE" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">RECT</button>
-              <button type="button" data-circuit="FIGURE8" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">8</button>
-              <button type="button" data-circuit="TRIANGLE" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">TRI</button>
-              <button type="button" data-circuit="COMPACT" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">SMALL</button>
+            <div class="flex flex-nowrap items-center gap-1 overflow-x-auto">
+              <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mr-1 whitespace-nowrap">TRACK:</span>
+              <button type="button" data-circuit="NEWYORK" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-sky-600 text-white cursor-pointer hover:bg-sky-700 whitespace-nowrap">NYC</button>
+              <button type="button" data-circuit="DALLAS" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">DALLAS</button>
+              <button type="button" data-circuit="ATLANTA" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">ATL</button>
+              <button type="button" data-circuit="NEWJERSEY" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">NJ</button>
+              <button type="button" data-circuit="COMPACT" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">TEST</button>
             </div>
             
             <div class="flex items-center gap-1.5">
@@ -762,7 +763,8 @@
         ROUGH:    { name: 'ROUGH',    grip: 0.78, roughness: 0.14,  hillAmp: 1.6,  groundColor: 0x6b705c, roadColor: 0x475569, fogColor: 0xf1f5f9, skyColor: 0xcbd5e1 },
         POTHOLES: { name: 'POTHOLES', grip: 0.82, roughness: 0.18,  hillAmp: 0.4,  groundColor: 0x475569, roadColor: 0x27272a, fogColor: 0xe2e8f0, skyColor: 0x94a3b8 },
         RAINY:    { name: 'RAINY',    grip: 0.68, roughness: 0.02,  hillAmp: 0.5,  groundColor: 0x2c3e50, roadColor: 0x0f172a, fogColor: 0x94a3b8, skyColor: 0x64748b },
-        DESERT:   { name: 'DESERT',   grip: 0.76, roughness: 0.05,  hillAmp: 2.4,  groundColor: 0xd4a373, roadColor: 0x57534e, fogColor: 0xfef3c7, skyColor: 0xfde68a }
+        DESERT:   { name: 'DESERT',   grip: 0.76, roughness: 0.05,  hillAmp: 2.4,  groundColor: 0xd4a373, roadColor: 0x57534e, fogColor: 0xfef3c7, skyColor: 0xfde68a },
+        HILLY:    { name: 'HILLY',    grip: 0.72, roughness: 0.08,  hillAmp: 6.2,  groundColor: 0x3d5a4a, roadColor: 0x27382a, fogColor: 0xecfdf5, skyColor: 0xa7f3d0 }
       };
 
       // =========================================================================
@@ -832,7 +834,7 @@
       // 3. CLOSED-LOOP ROAD SPLINE & BOUNDARY GEOMETRY HELPERS
       // =========================================================================
       const CIRCUIT_SHAPES = {
-        OVAL: [
+        NEWYORK: [
           new THREE.Vector3(-80, 0, -60),
           new THREE.Vector3(-40, 0, -75),
           new THREE.Vector3(0,   0, -80),
@@ -848,7 +850,7 @@
           new THREE.Vector3(-95, 0,  20),
           new THREE.Vector3(-95, 0, -20)
         ],
-        RECTANGLE: [
+        DALLAS: [
           new THREE.Vector3(-70, 0, -70),
           new THREE.Vector3(70,  0, -70),
           new THREE.Vector3(90,  0, -50),
@@ -858,7 +860,7 @@
           new THREE.Vector3(-90, 0,  50),
           new THREE.Vector3(-90, 0, -50)
         ],
-        FIGURE8: [
+        ATLANTA: [
           new THREE.Vector3(-60, 0, -50),
           new THREE.Vector3(-30, 0, -70),
           new THREE.Vector3(0,   0, -60),
@@ -876,7 +878,7 @@
           new THREE.Vector3(-60, 0,  0),
           new THREE.Vector3(-70, 0, -20)
         ],
-        TRIANGLE: [
+        NEWJERSEY: [
           new THREE.Vector3(0,   0, -80),
           new THREE.Vector3(80,  0,  60),
           new THREE.Vector3(-80, 0,  60),
@@ -895,8 +897,8 @@
         ]
       };
       
-      let currentCircuitShape = 'OVAL';
-      let ROAD_WAYPOINTS = CIRCUIT_SHAPES['OVAL'];
+      let currentCircuitShape = 'NEWYORK';
+      let ROAD_WAYPOINTS = CIRCUIT_SHAPES['NEWYORK'];
       let roadCurve = new THREE.CatmullRomCurve3(ROAD_WAYPOINTS, true, 'catmullrom', 0.5);
       const ROAD_WIDTH = 8.6;
       const SAFE_LANE_HALF_WIDTH = 3.1;
