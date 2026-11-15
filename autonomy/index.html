@@ -2676,6 +2676,8 @@
         updateVehiclePhysics(dt);
         updateSensorsAndVision();
         updateTerrainMappingCube();
+        updateHUDElements();
+        renderTelemetryLogs();
 
         if (state.cameraMode === 'CHASE') {
           const backX = state.pos.x - Math.sin(state.heading) * 10.5;
@@ -2713,7 +2715,6 @@
         }
 
         drawCockpitInstruments();
-        updateHUDElements();
 
         renderer.render(scene, camera);
         navRenderer.render(navScene, navCamera);
