@@ -126,65 +126,98 @@
   <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 p-2.5 lg:overflow-hidden">
 
     <!-- LEFT PANE (3 COLS): VIRTUAL IMU, 12-CH SONAR & 8-CORNER VISION ARRAY -->
-    <section class="lg:col-span-3 flex flex-col gap-2.5 lg:overflow-y-auto pr-0.5">
+    <section class="lg:col-span-3 flex flex-col gap-3 lg:overflow-y-auto pr-0.5">
 
-      <!-- Card 1: 9-Axis IMU & 3-Axis G-Force -->
-      <div class="bg-white rounded-xl border border-slate-200 p-2.5 shadow-xs shrink-0">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">9-Axis IMU &amp; G-Force</h2>
-          </div>
-          <span class="text-[10px] font-mono-tech font-bold text-slate-400">60 Hz</span>
+      <!-- Left Sidebar Header -->
+      <div class="flex items-center justify-between px-1">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+          <h1 class="text-xs font-extrabold uppercase tracking-widest text-sky-700 leading-none">Virtual IMU &<br/>Vision Array</h1>
         </div>
+        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border border-emerald-500 bg-emerald-50 text-emerald-700 uppercase tracking-wider">Active</span>
+      </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex flex-col items-center bg-slate-50 rounded-lg p-1.5 border border-slate-200">
-            <canvas id="canvas-horizon" class="w-full h-24 rounded-md"></canvas>
-            <div class="w-full flex justify-between text-[10px] font-mono-tech font-bold text-slate-600 mt-1 px-0.5">
-              <span>P:<span id="imu-pitch">0.0°</span></span>
-              <span>R:<span id="imu-roll">0.0°</span></span>
+      <!-- Card 1: 9-Axis IMU Feed & Accelerometer (Side by Side) -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <!-- 9-Axis IMU Feed -->
+        <div class="bg-white rounded-lg border border-slate-200 p-2 shadow-xs">
+          <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800 mb-1.5">9-Axis IMU<br/>Feed</h3>
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-center bg-slate-50 rounded-lg p-1 border border-slate-200">
+              <canvas id="canvas-horizon" class="w-full h-20 rounded"></canvas>
+            </div>
+            <div class="text-[9px] font-mono-tech space-y-0.5">
+              <div class="flex justify-between text-slate-600">
+                <span>PITCH:</span>
+                <span class="text-sky-600 font-bold"><span id="imu-pitch">0.0°</span> (0.00)</span>
+              </div>
+              <div class="flex justify-between text-slate-600">
+                <span>ROLL:</span>
+                <span class="text-orange-600 font-bold"><span id="imu-roll">0.0°</span> (0.00)</span>
+              </div>
+              <div class="flex justify-between text-slate-600">
+                <span>YAW/MAG:</span>
+                <span class="text-teal-600 font-bold"><span id="imu-yaw">0.0°</span> (0.90)</span>
+              </div>
             </div>
           </div>
+          <div class="text-[9px] font-mono-tech text-sky-600 font-bold text-center mt-1">ACC·GYRO·MAG</div>
+        </div>
 
-          <div class="flex flex-col items-center bg-slate-50 rounded-lg p-1.5 border border-slate-200">
-            <canvas id="canvas-gforce" class="w-full h-24 rounded-md"></canvas>
-            <div class="w-full flex justify-between text-[10px] font-mono-tech font-bold text-slate-600 mt-1 px-0.5">
-              <span>X:<span id="imu-latg">0.00g</span></span>
-              <span>Y:<span id="imu-long">0.00g</span></span>
+        <!-- Accelerometer -->
+        <div class="bg-white rounded-lg border border-slate-200 p-2 shadow-xs">
+          <div class="flex items-center justify-between mb-1.5">
+            <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">Accelerometer</h3>
+            <span class="text-[10px] font-mono-tech font-bold text-orange-600"><span id="accel-total">3.83</span> G</span>
+          </div>
+          <div class="flex items-center justify-center bg-slate-50 rounded-lg p-1 border border-slate-200 mb-1.5">
+            <canvas id="canvas-gforce" class="w-full h-20 rounded"></canvas>
+          </div>
+          <div class="text-[9px] font-mono-tech space-y-0.5">
+            <div class="flex justify-between text-slate-600">
+              <span>LONG (X):</span>
+              <span class="text-sky-600 font-bold"><span id="imu-latg">+0.02</span> g</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>LAT (Y):</span>
+              <span class="text-orange-600 font-bold"><span id="imu-long">+3.69</span> g</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>VERT (Z):</span>
+              <span class="text-teal-600 font-bold"><span id="accel-vert">+1.00</span> g</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Card 2: 12-Channel Ultrasonic Sonar Array -->
-      <div class="bg-white rounded-xl border border-slate-200 p-2.5 shadow-xs shrink-0">
+      <div class="bg-white rounded-lg border border-slate-200 p-2.5 shadow-xs">
         <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">12-Ch Ultrasonic Sonar</h2>
-          </div>
-          <span id="sonar-min-badge" class="text-[10px] font-mono-tech font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">MIN: 18.0m</span>
+          <h2 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">Ultrasonic Sonar Array (12-ch)</h2>
+          <span id="sonar-min-badge" class="text-[9px] font-mono-tech font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">MIN: 18.0m</span>
         </div>
 
-        <div class="space-y-2">
-          <div class="bg-slate-900 rounded-lg p-1 border border-slate-700">
+        <div class="grid grid-cols-2 gap-2 items-start">
+          <!-- Sonar Visualization -->
+          <div class="bg-slate-50 rounded-lg p-1 border border-slate-200">
             <canvas id="canvas-sonar" class="w-full h-24 rounded"></canvas>
           </div>
-          <div id="sonar-grid" class="grid grid-cols-4 gap-1.5 text-[10px] font-mono-tech"></div>
+
+          <!-- Sonar Grid (6x2 for 12 channels with directional labels) -->
+          <div id="sonar-grid" class="grid grid-cols-3 gap-1 text-[9px] font-mono-tech"></div>
         </div>
       </div>
 
       <!-- Card 3: 8-Corner Surround Vision Cameras -->
-      <div class="bg-white rounded-xl border border-slate-200 p-2.5 shadow-xs flex-1 flex flex-col min-h-[260px]">
+      <div class="bg-white rounded-lg border border-slate-200 p-2.5 shadow-xs">
         <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">8-Corner Surround Vision</h2>
-          </div>
+          <h2 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">8-Corner Surround Vision</h2>
+          <span class="text-[9px] font-mono-tech font-bold text-slate-400">DEPTH / LIDAR</span>
         </div>
 
-        <div id="camera-grid" class="grid grid-cols-2 gap-1.5 flex-1"></div>
+        <div id="camera-grid" class="grid grid-cols-2 gap-1.5"></div>
       </div>
 
     </section>
@@ -1566,12 +1599,13 @@
       // =========================================================================
       // 8. 12-CHANNEL ULTRASONIC SONAR & 8-CORNER SURROUND VISION ARRAY
       // =========================================================================
+      const SONAR_LABELS = ['F1', 'F2', 'F3', 'F4', 'R1', 'R2', 'B1', 'B2', 'B3', 'B4', 'L1', 'L2'];
       const sonarGridEl = document.getElementById('sonar-grid');
       for (let i = 0; i < 12; i++) {
         const cell = document.createElement('div');
         cell.id = `sonar-cell-${i}`;
         cell.className = 'sonar-cell bg-slate-50 border-slate-200 text-slate-700';
-        cell.innerHTML = `<span class="label text-slate-500">S${String(i + 1).padStart(2, '0')}</span><span id="sonar-val-${i}" class="value">20.0</span><span class="text-[8px] text-slate-400">m</span>`;
+        cell.innerHTML = `<span class="label text-slate-500">${SONAR_LABELS[i]}</span><span id="sonar-val-${i}" class="value">20.0</span><span class="text-[8px] text-slate-400">m</span>`;
         sonarGridEl.appendChild(cell);
       }
 
@@ -2160,6 +2194,7 @@
 
         document.getElementById('imu-pitch').textContent = `${THREE.MathUtils.radToDeg(state.pitch).toFixed(1)}°`;
         document.getElementById('imu-roll').textContent = `${THREE.MathUtils.radToDeg(state.roll).toFixed(1)}°`;
+        document.getElementById('imu-yaw').textContent = `${THREE.MathUtils.radToDeg(state.heading).toFixed(1)}°`;
 
         const gw = gforceCanvas.width = gforceCanvas.clientWidth || 120;
         const gh = gforceCanvas.height = gforceCanvas.clientHeight || 96;
@@ -2189,8 +2224,12 @@
         gforceCtx.arc(dotX, dotY, 4.5, 0, Math.PI * 2);
         gforceCtx.fill();
 
-        document.getElementById('imu-latg').textContent = `${state.accelLat.toFixed(2)}g`;
-        document.getElementById('imu-long').textContent = `${state.accelLon.toFixed(2)}g`;
+        document.getElementById('imu-latg').textContent = `${state.accelLat.toFixed(2)}`;
+        document.getElementById('imu-long').textContent = `${state.accelLon.toFixed(2)}`;
+        const accelZ = (Math.sqrt(state.accelLat * state.accelLat + state.accelLon * state.accelLon + 1.0 * 1.0) - 1.0).toFixed(2);
+        document.getElementById('accel-vert').textContent = `${accelZ >= 0 ? '+' : ''}${accelZ}`;
+        const accelTotal = Math.sqrt(state.accelLat * state.accelLat + state.accelLon * state.accelLon + 1.0 * 1.0).toFixed(2);
+        document.getElementById('accel-total').textContent = accelTotal;
 
         const sw = sonarCanvas.width = sonarCanvas.clientWidth || 110;
         const sh = sonarCanvas.height = sonarCanvas.clientHeight || 110;
