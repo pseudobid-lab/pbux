@@ -454,32 +454,48 @@
           </div>
         </div>
 
-        <!-- Main Viewport Center: Terrain Selector & Speed Gauge -->
-        <div class="absolute left-1/2 bottom-8 transform -translate-x-1/2 flex gap-3 pointer-events-auto">
-          <!-- Terrain Environment Selector -->
-          <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg pointer-events-auto flex flex-col gap-1">
-            <div class="flex flex-wrap items-center gap-1">
-              <span class="text-[8px] font-extrabold uppercase tracking-wider text-slate-500 mr-1">ENV:</span>
-              <button type="button" data-terrain="CITY" class="terrain-btn px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-slate-900 text-white cursor-pointer">CITY</button>
-              <button type="button" data-terrain="MOUNTAIN" class="terrain-btn px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer">MTN</button>
-              <button type="button" data-terrain="MUDDY" class="terrain-btn px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer">MUD</button>
-              <button type="button" data-terrain="ROUGH" class="terrain-btn px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer">RGH</button>
-              <button type="button" data-terrain="POTHOLES" class="terrain-btn px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer">POT</button>
+        <!-- Bottom Bar: Terrain Selector (Left) & Speed Gauge (Right) - Fixed Layout -->
+        <div class="fixed bottom-0 left-0 right-0 flex items-end justify-between gap-2.5 p-2.5 pointer-events-auto bg-gradient-to-t from-slate-900/50 to-transparent z-30">
+          <!-- Terrain Environment Selector (Bottom-Left) -->
+          <div class="glass-hud rounded-t-xl border border-b-0 border-slate-300/90 p-2 shadow-lg pointer-events-auto flex flex-col gap-1">
+            <div class="flex flex-nowrap items-center gap-1">
+              <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mr-1 whitespace-nowrap">ENV:</span>
+              <button type="button" data-terrain="CITY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-900 text-white cursor-pointer hover:bg-slate-800 whitespace-nowrap">CITY</button>
+              <button type="button" data-terrain="MOUNTAIN" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">MOUNTAIN</button>
+              <button type="button" data-terrain="MUDDY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">MUDDY</button>
+              <button type="button" data-terrain="ROUGH" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">ROUGH</button>
+              <button type="button" data-terrain="POTHOLES" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">POTHOLES</button>
+              <button type="button" data-terrain="RAINY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">RAINY</button>
+              <button type="button" data-terrain="DESERT" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">DESERT</button>
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 whitespace-nowrap">OBSTACLES:</span>
+              <button id="btn-spawn-obs" type="button" class="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-extrabold shadow-2xs transition cursor-pointer whitespace-nowrap">
+                + SPAWN
+              </button>
+              <button id="btn-clear-obs" type="button" class="px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[9px] font-extrabold transition cursor-pointer whitespace-nowrap">
+                CLEAR
+              </button>
+              <span id="hud-obs-count" class="text-[9px] font-mono-tech font-bold text-slate-600">ACTIVE: 5</span>
             </div>
           </div>
 
-          <!-- Radial Speedometer & Cruise Status -->
-          <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg pointer-events-auto flex flex-col items-center">
-            <div class="relative w-20 h-12 flex items-center justify-center">
+          <!-- Spacer to push speedometer to right -->
+          <div class="flex-1"></div>
+
+          <!-- Radial Speedometer & Cruise Status (Bottom-Right) -->
+          <div class="glass-hud rounded-t-xl border border-b-0 border-slate-300/90 p-2 shadow-lg pointer-events-auto flex flex-col items-center">
+            <div class="relative w-24 h-16 flex items-center justify-center">
               <canvas id="canvas-speedo" width="120" height="80" class="w-full h-full"></canvas>
               <div class="absolute bottom-0.5 flex flex-col items-center leading-none">
-                <span id="hud-speed-kmh" class="text-sm font-mono-tech font-extrabold text-slate-900">0</span>
-                <span class="text-[7px] font-bold text-slate-500">KM/H</span>
+                <span id="hud-speed-kmh" class="text-base font-mono-tech font-extrabold text-slate-900">0</span>
+                <span class="text-[8px] font-bold text-slate-500">KM/H</span>
               </div>
             </div>
-            <div id="hud-cruise-badge" class="mt-1 inline-flex items-center gap-1 px-1 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-[7px] font-mono-tech font-bold text-emerald-800 whitespace-nowrap">
-              <span id="hud-cruise-dot" class="w-1 h-1 rounded-full bg-emerald-600 animate-pulse"></span>
-              <span id="hud-cruise-text">CRUISE</span>
+            <div id="hud-cruise-badge" class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-[9px] font-mono-tech font-extrabold text-emerald-800">
+              <span id="hud-cruise-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span id="hud-cruise-text">CRUISE OPT: MAX SPEED</span>
             </div>
           </div>
         </div>
