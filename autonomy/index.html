@@ -256,86 +256,180 @@
         <div id="camera-grid" class="grid grid-cols-2 gap-1.5"></div>
       </div>
 
-      <!-- Card 4: Services & Prompt-Based Feed -->
-      <div class="bg-white rounded-lg border border-slate-200 p-2 shadow-xs">
-        <div class="flex items-center justify-between mb-1.5">
-          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700">Services & Bids</h3>
-          <button id="services-refresh" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">REFRESH</button>
+      <!-- Inline Services Feed with Collapsible Popup -->
+      <div class="bg-white rounded-lg border border-slate-200 shadow-xs">
+        <div class="flex items-center justify-between px-2 py-1.5 border-b border-slate-200">
+          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700">Nearby Services & Attractions</h3>
+          <div class="flex gap-1">
+            <button id="services-prefs" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition cursor-pointer">⚙️ PREFS</button>
+            <button id="services-toggle" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">▼</button>
+          </div>
         </div>
-        
-        <div class="space-y-1.5 max-h-40 overflow-y-auto">
-          <!-- Service Request Item Template -->
-          <div id="services-list" class="space-y-1.5">
-            <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded p-1.5 border border-amber-200">
-              <div class="flex items-start justify-between gap-1">
-                <div class="flex-1">
-                  <div class="text-[8px] font-bold text-slate-800">🅿️ Parking</div>
-                  <div class="text-[7px] text-slate-600 line-clamp-1">Lowest rate near target (1.2km)</div>
-                  <div class="text-[7px] font-mono-tech text-amber-700 font-bold mt-0.5">$2.50/hr • 4★ • 3min walk</div>
-                </div>
-                <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 cursor-pointer whitespace-nowrap">BID</button>
-              </div>
-              <div class="text-[6px] text-slate-500 mt-0.5">ETH 0.0012 • Slot: 2hrs • Auto-contract</div>
-            </div>
 
-            <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded p-1.5 border border-violet-200">
-              <div class="flex items-start justify-between gap-1">
-                <div class="flex-1">
-                  <div class="text-[8px] font-bold text-slate-800">🏨 Lodging</div>
-                  <div class="text-[7px] text-slate-600 line-clamp-1">Business conference suite nearby</div>
-                  <div class="text-[7px] font-mono-tech text-violet-700 font-bold mt-0.5">$89/night • 5★ • WiFi+WiFi</div>
-                </div>
-                <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-violet-600 text-white hover:bg-violet-700 cursor-pointer whitespace-nowrap">BID</button>
-              </div>
-              <div class="text-[6px] text-slate-500 mt-0.5">ETH 0.045 • Checkin: 16:00 • Auto-contract</div>
+        <!-- Inline Compact Feed (Always Visible) -->
+        <div id="services-inline" class="px-2 py-1.5 space-y-1 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
+          <div id="inline-services-list" class="space-y-1">
+            <div class="flex items-center gap-1 bg-white rounded p-1 border border-amber-100 hover:border-amber-300 transition cursor-pointer">
+              <span class="text-[7px] font-bold bg-amber-100 text-amber-700 px-1 rounded">🅿️ 0.3mi</span>
+              <span class="text-[7px] font-mono-tech text-slate-700 flex-1">Parking • $2.50/hr</span>
+              <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700">BID</button>
             </div>
-
-            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded p-1.5 border border-emerald-200">
-              <div class="flex items-start justify-between gap-1">
-                <div class="flex-1">
-                  <div class="text-[8px] font-bold text-slate-800">☕ Starbucks</div>
-                  <div class="text-[7px] text-slate-600 line-clamp-1">Nearest location (0.8km)</div>
-                  <div class="text-[7px] font-mono-tech text-emerald-700 font-bold mt-0.5">Order ahead • 4.8★ • Drive-thru</div>
-                </div>
-                <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer whitespace-nowrap">BID</button>
-              </div>
-              <div class="text-[6px] text-slate-500 mt-0.5">USDC 5.75 • Pickup: 10min • Auto-contract</div>
+            <div class="flex items-center gap-1 bg-white rounded p-1 border border-emerald-100 hover:border-emerald-300 transition cursor-pointer">
+              <span class="text-[7px] font-bold bg-emerald-100 text-emerald-700 px-1 rounded">☕ 0.8mi</span>
+              <span class="text-[7px] font-mono-tech text-slate-700 flex-1">Starbucks • 4.8★</span>
+              <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700">BID</button>
+            </div>
+            <div class="flex items-center gap-1 bg-white rounded p-1 border border-blue-100 hover:border-blue-300 transition cursor-pointer">
+              <span class="text-[7px] font-bold bg-blue-100 text-blue-700 px-1 rounded">🏈 1.2mi</span>
+              <span class="text-[7px] font-mono-tech text-slate-700 flex-1">NFL Game • Arrival in 8min</span>
+              <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700">INFO</button>
             </div>
           </div>
         </div>
 
-        <!-- Bid Input Modal -->
-        <div id="bid-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg">
-            <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800 mb-2">Place Bid</h3>
-            <div class="space-y-2 text-[8px]">
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">Service</label>
-                <input id="bid-service" type="text" readonly class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1" />
+        <!-- Collapsible Detailed Feed -->
+        <div id="services-popup" class="hidden border-t border-slate-200">
+          <div class="px-2 py-1.5 max-h-48 overflow-y-auto space-y-1.5">
+            <div id="services-list">
+              <!-- Parking Service -->
+              <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded p-1.5 border border-amber-200 hover:border-amber-400 transition">
+                <div class="flex items-start justify-between gap-1 mb-0.5">
+                  <div class="flex-1">
+                    <div class="text-[8px] font-bold text-slate-800">🅿️ Parking</div>
+                    <div class="text-[7px] text-slate-600">Lowest rate near target (0.3km)</div>
+                    <div class="text-[7px] font-mono-tech text-amber-700 font-bold mt-0.5">$2.50/hr • 4★ • 3min walk</div>
+                  </div>
+                  <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 cursor-pointer whitespace-nowrap">BID</button>
+                </div>
+                <div class="text-[6px] text-slate-500">ETH 0.0012 • Slot: 2hrs • Auto-contract</div>
               </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">Price (Crypto)</label>
-                <select id="bid-currency" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-1">
-                  <option value="ETH">ETH (Ethereum)</option>
-                  <option value="USDC">USDC (Stablecoin)</option>
-                  <option value="BTC">BTC (Bitcoin)</option>
-                  <option value="MATIC">MATIC (Polygon)</option>
-                </select>
-                <input id="bid-price" type="number" step="0.001" placeholder="Amount" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1" />
+
+              <!-- Lodging Service -->
+              <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded p-1.5 border border-violet-200 hover:border-violet-400 transition">
+                <div class="flex items-start justify-between gap-1 mb-0.5">
+                  <div class="flex-1">
+                    <div class="text-[8px] font-bold text-slate-800">🏨 Lodging</div>
+                    <div class="text-[7px] text-slate-600">Business conference suite nearby</div>
+                    <div class="text-[7px] font-mono-tech text-violet-700 font-bold mt-0.5">$89/night • 5★ • WiFi+WiFi</div>
+                  </div>
+                  <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-violet-600 text-white hover:bg-violet-700 cursor-pointer whitespace-nowrap">BID</button>
+                </div>
+                <div class="text-[6px] text-slate-500">ETH 0.045 • Checkin: 16:00 • Auto-contract</div>
               </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">Contract Duration</label>
-                <select id="bid-duration" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1">
-                  <option value="1">1 hour</option>
-                  <option value="2" selected>2 hours</option>
-                  <option value="24">24 hours</option>
-                  <option value="7">7 days</option>
-                </select>
+
+              <!-- Starbucks Service -->
+              <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded p-1.5 border border-emerald-200 hover:border-emerald-400 transition">
+                <div class="flex items-start justify-between gap-1 mb-0.5">
+                  <div class="flex-1">
+                    <div class="text-[8px] font-bold text-slate-800">☕ Starbucks</div>
+                    <div class="text-[7px] text-slate-600">Nearest location (0.8km)</div>
+                    <div class="text-[7px] font-mono-tech text-emerald-700 font-bold mt-0.5">Order ahead • 4.8★ • Drive-thru</div>
+                  </div>
+                  <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer whitespace-nowrap">BID</button>
+                </div>
+                <div class="text-[6px] text-slate-500">USDC 5.75 • Pickup: 10min • Auto-contract</div>
               </div>
-              <div class="flex gap-1 mt-2">
-                <button id="bid-cancel" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 cursor-pointer">CANCEL</button>
-                <button id="bid-submit" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 cursor-pointer">CONFIRM BID</button>
+
+              <!-- Dynamic Attraction Feed -->
+              <div id="attractions-container" class="space-y-1.5"></div>
+            </div>
+
+            <div class="flex gap-1 justify-between pt-1 border-t border-slate-200">
+              <button id="services-refresh" class="flex-1 text-[7px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">REFRESH FEED</button>
+              <button id="services-refresh-attractions" class="flex-1 text-[7px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition cursor-pointer">NEARBY EVENTS</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferences Modal -->
+      <div id="prefs-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg max-h-96 overflow-y-auto">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800">Attraction Preferences</h3>
+            <button id="prefs-close" class="text-[12px] text-slate-500 hover:text-slate-700 cursor-pointer">✕</button>
+          </div>
+          <div class="space-y-1.5 text-[8px]">
+            <div class="space-y-1">
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-sports" class="attraction-pref w-3 h-3" data-category="sports" />
+                <span class="font-bold">🏈 Sports Events (NFL, NBA, MLB)</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-dining" class="attraction-pref w-3 h-3" data-category="dining" checked />
+                <span class="font-bold">🍽️ Dining & Restaurants</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-coffee" class="attraction-pref w-3 h-3" data-category="coffee" checked />
+                <span class="font-bold">☕ Coffee & Cafes</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-events" class="attraction-pref w-3 h-3" data-category="events" />
+                <span class="font-bold">🎭 Entertainment & Shows</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-shopping" class="attraction-pref w-3 h-3" data-category="shopping" />
+                <span class="font-bold">🛍️ Shopping & Malls</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-gas" class="attraction-pref w-3 h-3" data-category="gas" checked />
+                <span class="font-bold">⛽ Gas Stations & EV Charging</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-lodging" class="attraction-pref w-3 h-3" data-category="lodging" checked />
+                <span class="font-bold">🏨 Hotels & Lodging</span>
+              </label>
+              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
+                <input type="checkbox" id="pref-parking" class="attraction-pref w-3 h-3" data-category="parking" checked />
+                <span class="font-bold">🅿️ Parking & Garages</span>
+              </label>
+            </div>
+            <div class="border-t border-slate-200 pt-1.5">
+              <label class="text-[7px] font-bold text-slate-700 block mb-1">Search Radius</label>
+              <div class="flex items-center gap-1">
+                <input type="range" id="pref-radius" min="0.5" max="5" step="0.5" value="2" class="flex-1" />
+                <span id="radius-display" class="font-mono-tech font-bold text-slate-600 min-w-[30px]">2.0 mi</span>
               </div>
+            </div>
+          </div>
+          <div class="flex gap-1 mt-2 pt-2 border-t border-slate-200">
+            <button id="prefs-save" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 cursor-pointer">SAVE</button>
+            <button id="prefs-reset" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 cursor-pointer">RESET</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bid Input Modal -->
+      <div id="bid-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg">
+          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800 mb-2">Place Bid</h3>
+          <div class="space-y-2 text-[8px]">
+            <div>
+              <label class="block font-bold text-slate-700 mb-0.5">Service</label>
+              <input id="bid-service" type="text" readonly class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-0.5">Price (Crypto)</label>
+              <select id="bid-currency" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-1">
+                <option value="ETH">ETH (Ethereum)</option>
+                <option value="USDC">USDC (Stablecoin)</option>
+                <option value="BTC">BTC (Bitcoin)</option>
+                <option value="MATIC">MATIC (Polygon)</option>
+              </select>
+              <input id="bid-price" type="number" step="0.001" placeholder="Amount" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-0.5">Contract Duration</label>
+              <select id="bid-duration" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1">
+                <option value="1">1 hour</option>
+                <option value="2" selected>2 hours</option>
+                <option value="24">24 hours</option>
+                <option value="7">7 days</option>
+              </select>
+            </div>
+            <div class="flex gap-1 mt-2">
+              <button id="bid-cancel" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 cursor-pointer">CANCEL</button>
+              <button id="bid-submit" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 cursor-pointer">CONFIRM BID</button>
             </div>
           </div>
         </div>
@@ -2953,24 +3047,196 @@
       });
 
       // =========================================================================
-      // 11A. SERVICES & BIDDING SYSTEM
+      // 11A. SERVICES & BIDDING SYSTEM WITH ATTRACTIONS
       // =========================================================================
+      
+      // Attractions database
+      const attractionsDb = {
+        sports: [
+          { name: '🏈 NFL Game', desc: 'Giants vs Cowboys', distance: 1.2, rating: 4.9, color: 'blue' },
+          { name: '🏀 NBA Finals', desc: 'Lakers vs Celtics', distance: 2.1, rating: 4.8, color: 'blue' },
+          { name: '⚾ MLB Game', desc: 'Yankees vs Red Sox', distance: 3.5, rating: 4.7, color: 'blue' }
+        ],
+        dining: [
+          { name: '🍽️ Michelin Star', desc: 'French Bistro • Reservation', distance: 0.5, rating: 4.9, color: 'orange' },
+          { name: '🍕 Pizza Place', desc: 'Famous NY Pizza', distance: 0.7, rating: 4.6, color: 'orange' },
+          { name: '🍔 Burger Joint', desc: 'Craft Burgers & Fries', distance: 1.1, rating: 4.5, color: 'orange' }
+        ],
+        coffee: [
+          { name: '☕ Starbucks', desc: 'Drive-thru Available', distance: 0.8, rating: 4.8, color: 'emerald' },
+          { name: '☕ Local Roastery', desc: 'Specialty Coffee', distance: 1.3, rating: 4.9, color: 'emerald' }
+        ],
+        events: [
+          { name: '🎭 Broadway Show', desc: 'Phantom of the Opera', distance: 1.8, rating: 4.9, color: 'purple' },
+          { name: '🎬 Movie Premiere', desc: 'Latest Blockbuster', distance: 2.2, rating: 4.7, color: 'purple' }
+        ],
+        shopping: [
+          { name: '🛍️ Mall', desc: 'Premium Shopping', distance: 1.5, rating: 4.5, color: 'pink' },
+          { name: '🏬 Outlet Store', desc: 'Designer Brands', distance: 2.0, rating: 4.4, color: 'pink' }
+        ],
+        gas: [
+          { name: '⛽ Gas Station', desc: 'Shell • Full Service', distance: 0.3, rating: 4.2, color: 'yellow' },
+          { name: '🔌 EV Charging', desc: 'Tesla Supercharger', distance: 0.6, rating: 4.8, color: 'green' }
+        ],
+        lodging: [
+          { name: '🏨 Business Hotel', desc: 'Conference Suite', distance: 0.9, rating: 4.8, color: 'violet' },
+          { name: '🏩 Boutique Inn', desc: 'Luxury Rooms', distance: 1.4, rating: 4.9, color: 'violet' }
+        ],
+        parking: [
+          { name: '🅿️ Parking Garage', desc: '$2.50/hr • Secure', distance: 0.3, rating: 4.4, color: 'amber' },
+          { name: '🅿️ Street Parking', desc: '2-hour Limit', distance: 0.2, rating: 3.9, color: 'amber' }
+        ]
+      };
+
+      // Load/save user preferences
+      function loadPreferences() {
+        const saved = localStorage.getItem('attractionPrefs');
+        if (saved) return JSON.parse(saved);
+        return {
+          categories: { sports: false, dining: true, coffee: true, events: false, shopping: false, gas: true, lodging: true, parking: true },
+          radius: 2.0
+        };
+      }
+
+      function savePreferences(prefs) {
+        localStorage.setItem('attractionPrefs', JSON.stringify(prefs));
+      }
+
+      let userPrefs = loadPreferences();
+
+      // Update radius display
+      document.getElementById('pref-radius').addEventListener('input', (e) => {
+        document.getElementById('radius-display').textContent = e.target.value + ' mi';
+      });
+
+      // Load preferences into UI
+      function loadPrefsUI() {
+        Object.keys(userPrefs.categories).forEach(cat => {
+          const checkbox = document.getElementById(`pref-${cat}`);
+          if (checkbox) checkbox.checked = userPrefs.categories[cat];
+        });
+        document.getElementById('pref-radius').value = userPrefs.radius;
+        document.getElementById('radius-display').textContent = userPrefs.radius + ' mi';
+      }
+      loadPrefsUI();
+
+      // Preferences Modal
+      const prefsModal = document.getElementById('prefs-modal');
+      document.getElementById('services-prefs').addEventListener('click', () => {
+        prefsModal.classList.remove('hidden');
+      });
+
+      document.getElementById('prefs-close').addEventListener('click', () => {
+        prefsModal.classList.add('hidden');
+      });
+
+      document.getElementById('prefs-save').addEventListener('click', () => {
+        userPrefs.categories = {};
+        document.querySelectorAll('.attraction-pref').forEach(checkbox => {
+          userPrefs.categories[checkbox.dataset.category] = checkbox.checked;
+        });
+        userPrefs.radius = parseFloat(document.getElementById('pref-radius').value);
+        savePreferences(userPrefs);
+        prefsModal.classList.add('hidden');
+        addTelemetryLog('SONAR', `Preferences saved • ${Object.values(userPrefs.categories).filter(v => v).length} categories enabled`);
+        generateAttractionsFeed();
+      });
+
+      document.getElementById('prefs-reset').addEventListener('click', () => {
+        userPrefs = {
+          categories: { sports: false, dining: true, coffee: true, events: false, shopping: false, gas: true, lodging: true, parking: true },
+          radius: 2.0
+        };
+        savePreferences(userPrefs);
+        loadPrefsUI();
+      });
+
+      prefsModal.addEventListener('click', (e) => {
+        if (e.target === prefsModal) prefsModal.classList.add('hidden');
+      });
+
+      // Generate attractions feed based on preferences
+      function generateAttractionsFeed() {
+        const container = document.getElementById('attractions-container');
+        container.innerHTML = '';
+        
+        const enabledCategories = Object.keys(userPrefs.categories).filter(cat => userPrefs.categories[cat]);
+        if (enabledCategories.length === 0) return;
+
+        const attractions = [];
+        enabledCategories.forEach(cat => {
+          attractionsDb[cat].forEach(attr => {
+            if (attr.distance <= userPrefs.radius) {
+              attractions.push({ ...attr, category: cat });
+            }
+          });
+        });
+
+        // Sort by distance
+        attractions.sort((a, b) => a.distance - b.distance);
+
+        attractions.slice(0, 3).forEach(attr => {
+          const colorMap = {
+            blue: 'blue', orange: 'orange', emerald: 'emerald', purple: 'purple',
+            pink: 'pink', yellow: 'yellow', green: 'green', violet: 'violet', amber: 'amber'
+          };
+          const col = colorMap[attr.color] || 'slate';
+          
+          const card = document.createElement('div');
+          card.className = `bg-gradient-to-r from-${col}-50 to-${col}-100 rounded p-1.5 border border-${col}-200 hover:border-${col}-400 transition cursor-pointer`;
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-1 mb-0.5">
+              <div class="flex-1">
+                <div class="text-[8px] font-bold text-slate-800">${attr.name}</div>
+                <div class="text-[7px] text-slate-600">${attr.desc} (${attr.distance}km)</div>
+                <div class="text-[7px] font-mono-tech text-${col}-700 font-bold mt-0.5">${attr.rating}★ • Nearby</div>
+              </div>
+              <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-${col}-600 text-white hover:bg-${col}-700 cursor-pointer whitespace-nowrap">EXPLORE</button>
+            </div>
+            <div class="text-[6px] text-slate-500">ETA: ${Math.ceil(attr.distance * 3)}min • Bid contract available</div>
+          `;
+          container.appendChild(card);
+        });
+
+        // Re-attach bid listeners
+        attachBidListeners();
+      }
+
+      // Toggle services popup
+      document.getElementById('services-toggle').addEventListener('click', () => {
+        const popup = document.getElementById('services-popup');
+        const toggle = document.getElementById('services-toggle');
+        popup.classList.toggle('hidden');
+        toggle.textContent = popup.classList.contains('hidden') ? '▼' : '▲';
+      });
+
+      // Bid modal system
       const bidModal = document.getElementById('bid-modal');
       const bidServiceInput = document.getElementById('bid-service');
       const bidCurrencySelect = document.getElementById('bid-currency');
       const bidPriceInput = document.getElementById('bid-price');
       const bidDurationSelect = document.getElementById('bid-duration');
 
-      document.querySelectorAll('.services-bid').forEach((btn, idx) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const serviceCard = btn.closest('[class*="gradient"]');
-          const serviceType = serviceCard.querySelector('[class*="font-bold"]').textContent;
-          bidServiceInput.value = serviceType;
-          bidModal.classList.remove('hidden');
-          bidPriceInput.focus();
+      function attachBidListeners() {
+        document.querySelectorAll('.services-bid').forEach(btn => {
+          btn.removeEventListener('click', handleBidClick);
+          btn.addEventListener('click', handleBidClick);
         });
-      });
+      }
+
+      function handleBidClick(e) {
+        e.stopPropagation();
+        const card = e.target.closest('[class*="gradient"], [class*="rounded p-1 border"]');
+        if (!card) return;
+        
+        const titleEl = card.querySelector('[class*="font-bold"]');
+        const serviceType = titleEl ? titleEl.textContent.trim() : 'Service';
+        bidServiceInput.value = serviceType;
+        bidModal.classList.remove('hidden');
+        bidPriceInput.focus();
+      }
+
+      attachBidListeners();
 
       document.getElementById('bid-cancel').addEventListener('click', () => {
         bidModal.classList.add('hidden');
@@ -2998,8 +3264,17 @@
       });
 
       document.getElementById('services-refresh').addEventListener('click', () => {
-        addTelemetryLog('SONAR', 'Service feed refreshed • 3 bids available');
+        addTelemetryLog('SONAR', 'Service feed refreshed • 3 primary bids available');
+        generateAttractionsFeed();
       });
+
+      document.getElementById('services-refresh-attractions').addEventListener('click', () => {
+        generateAttractionsFeed();
+        addTelemetryLog('SONAR', 'Nearby events & attractions refreshed • Filtered by preferences');
+      });
+
+      // Initial attractions feed
+      generateAttractionsFeed();
 
       // =========================================================================
       // 12. MAIN 60HZ SIMULATION & RENDER LOOP
