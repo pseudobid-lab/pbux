@@ -454,10 +454,9 @@
           </div>
         </div>
 
-        <!-- Bottom Bar: Terrain Selector (Left) & Speed Gauge (Right) - Fixed Layout -->
-        <div class="fixed bottom-0 left-0 right-0 flex items-end justify-between gap-2.5 p-2.5 pointer-events-auto bg-gradient-to-t from-slate-900/50 to-transparent z-30">
-          <!-- Terrain Environment Selector (Bottom-Left) -->
-          <div class="glass-hud rounded-t-xl border border-b-0 border-slate-300/90 p-2 shadow-lg pointer-events-auto flex flex-col gap-1">
+        <!-- Bottom-Left HUD: Terrain Environment Selector & Obstacle Spawner -->
+        <div class="absolute bottom-2.5 left-2.5 pointer-events-auto">
+          <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg flex flex-col gap-1">
             <div class="flex flex-nowrap items-center gap-1">
               <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mr-1 whitespace-nowrap">ENV:</span>
               <button type="button" data-terrain="CITY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-900 text-white cursor-pointer hover:bg-slate-800 whitespace-nowrap">CITY</button>
@@ -480,12 +479,11 @@
               <span id="hud-obs-count" class="text-[9px] font-mono-tech font-bold text-slate-600">ACTIVE: 5</span>
             </div>
           </div>
+        </div>
 
-          <!-- Spacer to push speedometer to right -->
-          <div class="flex-1"></div>
-
-          <!-- Radial Speedometer & Cruise Status (Bottom-Right) -->
-          <div class="glass-hud rounded-t-xl border border-b-0 border-slate-300/90 p-2 shadow-lg pointer-events-auto flex flex-col items-center">
+        <!-- Bottom-Right HUD: Radial Speedometer & Cruise Status -->
+        <div class="absolute bottom-2.5 right-2.5 pointer-events-auto">
+          <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg flex flex-col items-center">
             <div class="relative w-24 h-16 flex items-center justify-center">
               <canvas id="canvas-speedo" width="120" height="80" class="w-full h-full"></canvas>
               <div class="absolute bottom-0.5 flex flex-col items-center leading-none">
