@@ -72,6 +72,17 @@
 </head>
 <body class="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col">
 
+  <!-- Hidden IMU/Accel Elements for JavaScript References -->
+  <div style="display: none;">
+    <span id="imu-pitch">0.0°</span>
+    <span id="imu-roll">0.0°</span>
+    <span id="imu-yaw">0°</span>
+    <span id="imu-latg">0.0</span>
+    <span id="imu-long">0.0</span>
+    <span id="accel-total">1.0</span>
+    <span id="accel-vert">0.0</span>
+  </div>
+
   <!-- TOP TELEMETRY STATUS BAR -->
   <header class="bg-white border-b border-slate-200 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-xs z-20">
     <a href="../" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center gap-1.5">
@@ -139,78 +150,103 @@
         <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border border-emerald-500 bg-emerald-50 text-emerald-700 uppercase tracking-wider">Active</span>
       </div>
 
-      <!-- Card 1: 9-Axis IMU Feed & Accelerometer (Side by Side) -->
-      <div class="grid grid-cols-2 gap-2.5">
-        <!-- 9-Axis IMU Feed -->
-        <div class="bg-white rounded-lg border border-slate-200 p-2 shadow-xs">
-          <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800 mb-1.5">9-Axis IMU<br/>Feed</h3>
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-center bg-slate-50 rounded-lg p-1 border border-slate-200">
-              <canvas id="canvas-horizon" class="w-full h-20 rounded"></canvas>
-            </div>
-            <div class="text-[9px] font-mono-tech space-y-0.5">
-              <div class="flex justify-between text-slate-600">
-                <span>PITCH:</span>
-                <span class="text-sky-600 font-bold"><span id="imu-pitch">0.0°</span> (0.00)</span>
-              </div>
-              <div class="flex justify-between text-slate-600">
-                <span>ROLL:</span>
-                <span class="text-orange-600 font-bold"><span id="imu-roll">0.0°</span> (0.00)</span>
-              </div>
-              <div class="flex justify-between text-slate-600">
-                <span>YAW/MAG:</span>
-                <span class="text-teal-600 font-bold"><span id="imu-yaw">0.0°</span> (0.90)</span>
-              </div>
-            </div>
-          </div>
-          <div class="text-[9px] font-mono-tech text-sky-600 font-bold text-center mt-1">ACC·GYRO·MAG</div>
+      <!-- Card 1: Analog IMU Gauges (3 cols x 1 row) -->
+      <div class="grid grid-cols-3 gap-1.5">
+        <div class="bg-white rounded-lg border border-slate-200 p-1 shadow-xs">
+          <h3 class="text-[9px] font-bold text-slate-700 text-center mb-0.5">PITCH</h3>
+          <canvas id="canvas-imu-pitch" class="w-full h-16 rounded" style="aspect-ratio: 1/1;"></canvas>
+          <div class="text-[7px] text-center font-mono-tech text-slate-600 mt-0.5"><span id="imu-pitch-val">0.0</span>°</div>
         </div>
+        <div class="bg-white rounded-lg border border-slate-200 p-1 shadow-xs">
+          <h3 class="text-[9px] font-bold text-slate-700 text-center mb-0.5">ROLL</h3>
+          <canvas id="canvas-imu-roll" class="w-full h-16 rounded" style="aspect-ratio: 1/1;"></canvas>
+          <div class="text-[7px] text-center font-mono-tech text-slate-600 mt-0.5"><span id="imu-roll-val">0.0</span>°</div>
+        </div>
+        <div class="bg-white rounded-lg border border-slate-200 p-1 shadow-xs">
+          <h3 class="text-[9px] font-bold text-slate-700 text-center mb-0.5">YAW</h3>
+          <canvas id="canvas-imu-yaw" class="w-full h-16 rounded" style="aspect-ratio: 1/1;"></canvas>
+          <div class="text-[7px] text-center font-mono-tech text-slate-600 mt-0.5"><span id="imu-yaw-val">0</span>°</div>
+        </div>
+      </div>
 
-        <!-- Accelerometer -->
+      <!-- Cards 2-3: Accelerometer + Vehicle Health (Juxtaposed) -->
+      <div class="grid grid-cols-2 gap-1.5">
+        <!-- Left: Accelerometer Gauge -->
         <div class="bg-white rounded-lg border border-slate-200 p-2 shadow-xs">
           <div class="flex items-center justify-between mb-1.5">
-            <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">Accelerometer</h3>
-            <span class="text-[10px] font-mono-tech font-bold text-orange-600"><span id="accel-total">3.83</span> G</span>
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700">Accelerometer</h3>
+            <span class="text-[9px] font-mono-tech font-bold text-red-600"><span id="accel-total-val">1.0</span>G</span>
           </div>
-          <div class="flex items-center justify-center bg-slate-50 rounded-lg p-1 border border-slate-200 mb-1.5">
-            <canvas id="canvas-gforce" class="w-full h-20 rounded"></canvas>
+          <div class="flex items-center justify-center h-24 bg-slate-50 rounded-lg border border-slate-200">
+            <canvas id="canvas-accel-gauge" class="w-full h-full rounded"></canvas>
           </div>
-          <div class="text-[9px] font-mono-tech space-y-0.5">
-            <div class="flex justify-between text-slate-600">
-              <span>LONG (X):</span>
-              <span class="text-sky-600 font-bold"><span id="imu-latg">+0.02</span> g</span>
+        </div>
+
+        <!-- Right: Vehicle Health Gauges -->
+        <div class="bg-white rounded-lg border border-slate-200 p-1.5 shadow-xs">
+          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1">Vehicle Health</h3>
+          <div class="grid grid-cols-2 gap-1.5">
+            <div class="flex flex-col items-center">
+              <div class="w-12 h-12">
+                <canvas id="canvas-health-tyre" class="w-full h-full"></canvas>
+              </div>
+              <div class="text-[7px] font-mono-tech text-center mt-0.5">
+                <div class="font-bold text-slate-700">Tyre</div>
+                <span id="health-tyre-val" class="text-sky-600">32</span><span class="text-slate-500"> PSI</span>
+              </div>
             </div>
-            <div class="flex justify-between text-slate-600">
-              <span>LAT (Y):</span>
-              <span class="text-orange-600 font-bold"><span id="imu-long">+3.69</span> g</span>
+            <div class="flex flex-col items-center">
+              <div class="w-12 h-12">
+                <canvas id="canvas-health-engine" class="w-full h-full"></canvas>
+              </div>
+              <div class="text-[7px] font-mono-tech text-center mt-0.5">
+                <div class="font-bold text-slate-700">Engine</div>
+                <span id="health-engine-val" class="text-emerald-600">98</span><span class="text-slate-500">%</span>
+              </div>
             </div>
-            <div class="flex justify-between text-slate-600">
-              <span>VERT (Z):</span>
-              <span class="text-teal-600 font-bold"><span id="accel-vert">+1.00</span> g</span>
+            <div class="flex flex-col items-center">
+              <div class="w-12 h-12">
+                <canvas id="canvas-health-fuel" class="w-full h-full"></canvas>
+              </div>
+              <div class="text-[7px] font-mono-tech text-center mt-0.5">
+                <div class="font-bold text-slate-700">Fuel</div>
+                <span id="health-fuel-val" class="text-purple-600">87</span><span class="text-slate-500">%</span>
+              </div>
+            </div>
+            <div class="flex flex-col items-center">
+              <div class="w-12 h-12">
+                <canvas id="canvas-health-brake" class="w-full h-full"></canvas>
+              </div>
+              <div class="text-[7px] font-mono-tech text-center mt-0.5">
+                <div class="font-bold text-slate-700">Brake</div>
+                <span id="health-brake-val" class="text-pink-600">92</span><span class="text-slate-500">%</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Card 2: 12-Channel Ultrasonic Sonar Array -->
-      <div class="bg-white rounded-lg border border-slate-200 p-2.5 shadow-xs">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">Ultrasonic Sonar Array (12-ch)</h2>
-          <span id="sonar-min-badge" class="text-[9px] font-mono-tech font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">MIN: 18.0m</span>
+      <!-- Cards 4-5: Sonar Polar + Sonar Array (Juxtaposed) -->
+      <div class="grid grid-cols-2 gap-1.5">
+        <!-- Left: Sonar Visualization -->
+        <div class="bg-white rounded-lg border border-slate-200 p-1.5 shadow-xs">
+          <h3 class="text-[9px] font-bold uppercase tracking-wider text-slate-700 mb-1">Sonar Polar</h3>
+          <div class="flex items-center justify-center bg-slate-50 rounded p-1 border border-slate-200 h-24">
+            <canvas id="canvas-sonar" class="w-full h-full rounded"></canvas>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 items-start">
-          <!-- Sonar Visualization -->
-          <div class="bg-slate-50 rounded-lg p-1 border border-slate-200">
-            <canvas id="canvas-sonar" class="w-full h-24 rounded"></canvas>
+        <!-- Right: Compact Sonar Array -->
+        <div class="bg-white rounded-lg border border-slate-200 p-1.5 shadow-xs">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-[9px] font-bold uppercase tracking-wider text-slate-700">Sonar (12-ch)</h3>
+            <span id="sonar-min-badge" class="text-[7px] font-mono-tech font-bold px-1 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">MIN: 20m</span>
           </div>
-
-          <!-- Sonar Grid (6x2 for 12 channels with directional labels) -->
-          <div id="sonar-grid" class="grid grid-cols-3 gap-1 text-[9px] font-mono-tech"></div>
+          <div id="sonar-grid" class="grid grid-cols-6 gap-0.5 text-[6px] font-mono-tech"></div>
         </div>
       </div>
 
-      <!-- Card 3: 8-Corner Surround Vision Cameras -->
+      <!-- Card 6: 8-Corner Surround Vision Cameras -->
       <div class="bg-white rounded-lg border border-slate-200 p-2.5 shadow-xs">
         <div class="flex items-center justify-between mb-2">
           <h2 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-800">8-Corner Surround Vision</h2>
@@ -218,6 +254,91 @@
         </div>
 
         <div id="camera-grid" class="grid grid-cols-2 gap-1.5"></div>
+      </div>
+
+      <!-- Card 4: Services & Prompt-Based Feed -->
+      <div class="bg-white rounded-lg border border-slate-200 p-2 shadow-xs">
+        <div class="flex items-center justify-between mb-1.5">
+          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700">Services & Bids</h3>
+          <button id="services-refresh" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">REFRESH</button>
+        </div>
+        
+        <div class="space-y-1.5 max-h-40 overflow-y-auto">
+          <!-- Service Request Item Template -->
+          <div id="services-list" class="space-y-1.5">
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded p-1.5 border border-amber-200">
+              <div class="flex items-start justify-between gap-1">
+                <div class="flex-1">
+                  <div class="text-[8px] font-bold text-slate-800">🅿️ Parking</div>
+                  <div class="text-[7px] text-slate-600 line-clamp-1">Lowest rate near target (1.2km)</div>
+                  <div class="text-[7px] font-mono-tech text-amber-700 font-bold mt-0.5">$2.50/hr • 4★ • 3min walk</div>
+                </div>
+                <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 cursor-pointer whitespace-nowrap">BID</button>
+              </div>
+              <div class="text-[6px] text-slate-500 mt-0.5">ETH 0.0012 • Slot: 2hrs • Auto-contract</div>
+            </div>
+
+            <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded p-1.5 border border-violet-200">
+              <div class="flex items-start justify-between gap-1">
+                <div class="flex-1">
+                  <div class="text-[8px] font-bold text-slate-800">🏨 Lodging</div>
+                  <div class="text-[7px] text-slate-600 line-clamp-1">Business conference suite nearby</div>
+                  <div class="text-[7px] font-mono-tech text-violet-700 font-bold mt-0.5">$89/night • 5★ • WiFi+WiFi</div>
+                </div>
+                <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-violet-600 text-white hover:bg-violet-700 cursor-pointer whitespace-nowrap">BID</button>
+              </div>
+              <div class="text-[6px] text-slate-500 mt-0.5">ETH 0.045 • Checkin: 16:00 • Auto-contract</div>
+            </div>
+
+            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded p-1.5 border border-emerald-200">
+              <div class="flex items-start justify-between gap-1">
+                <div class="flex-1">
+                  <div class="text-[8px] font-bold text-slate-800">☕ Starbucks</div>
+                  <div class="text-[7px] text-slate-600 line-clamp-1">Nearest location (0.8km)</div>
+                  <div class="text-[7px] font-mono-tech text-emerald-700 font-bold mt-0.5">Order ahead • 4.8★ • Drive-thru</div>
+                </div>
+                <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer whitespace-nowrap">BID</button>
+              </div>
+              <div class="text-[6px] text-slate-500 mt-0.5">USDC 5.75 • Pickup: 10min • Auto-contract</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bid Input Modal -->
+        <div id="bid-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg">
+            <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800 mb-2">Place Bid</h3>
+            <div class="space-y-2 text-[8px]">
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">Service</label>
+                <input id="bid-service" type="text" readonly class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">Price (Crypto)</label>
+                <select id="bid-currency" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 mb-1">
+                  <option value="ETH">ETH (Ethereum)</option>
+                  <option value="USDC">USDC (Stablecoin)</option>
+                  <option value="BTC">BTC (Bitcoin)</option>
+                  <option value="MATIC">MATIC (Polygon)</option>
+                </select>
+                <input id="bid-price" type="number" step="0.001" placeholder="Amount" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">Contract Duration</label>
+                <select id="bid-duration" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1">
+                  <option value="1">1 hour</option>
+                  <option value="2" selected>2 hours</option>
+                  <option value="24">24 hours</option>
+                  <option value="7">7 days</option>
+                </select>
+              </div>
+              <div class="flex gap-1 mt-2">
+                <button id="bid-cancel" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 cursor-pointer">CANCEL</button>
+                <button id="bid-submit" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 cursor-pointer">CONFIRM BID</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </section>
@@ -2152,9 +2273,9 @@
       // 10. 2D INSTRUMENT CANVASES
       // =========================================================================
       const horizonCanvas = document.getElementById('canvas-horizon');
-      const horizonCtx = horizonCanvas.getContext('2d');
+      const horizonCtx = horizonCanvas ? horizonCanvas.getContext('2d') : null;
       const gforceCanvas = document.getElementById('canvas-gforce');
-      const gforceCtx = gforceCanvas.getContext('2d');
+      const gforceCtx = gforceCanvas ? gforceCanvas.getContext('2d') : null;
       const sonarCanvas = document.getElementById('canvas-sonar');
       const sonarCtx = sonarCanvas.getContext('2d');
       const speedoCanvas = document.getElementById('canvas-speedo');
@@ -2162,67 +2283,152 @@
       const sparkCanvas = document.getElementById('canvas-sparkline');
       const sparkCtx = sparkCanvas.getContext('2d');
 
+      // Analog gauge canvases
+      const imuPitchCanvas = document.getElementById('canvas-imu-pitch');
+      const imuPitchCtx = imuPitchCanvas ? imuPitchCanvas.getContext('2d') : null;
+      const imuRollCanvas = document.getElementById('canvas-imu-roll');
+      const imuRollCtx = imuRollCanvas ? imuRollCanvas.getContext('2d') : null;
+      const imuYawCanvas = document.getElementById('canvas-imu-yaw');
+      const imuYawCtx = imuYawCanvas ? imuYawCanvas.getContext('2d') : null;
+      const accelGaugeCanvas = document.getElementById('canvas-accel-gauge');
+      const accelGaugeCtx = accelGaugeCanvas ? accelGaugeCanvas.getContext('2d') : null;
+      const healthTyreCanvas = document.getElementById('canvas-health-tyre');
+      const healthTyreCtx = healthTyreCanvas ? healthTyreCanvas.getContext('2d') : null;
+      const healthEngineCanvas = document.getElementById('canvas-health-engine');
+      const healthEngineCtx = healthEngineCanvas ? healthEngineCanvas.getContext('2d') : null;
+      const healthFuelCanvas = document.getElementById('canvas-health-fuel');
+      const healthFuelCtx = healthFuelCanvas ? healthFuelCanvas.getContext('2d') : null;
+      const healthBrakeCanvas = document.getElementById('canvas-health-brake');
+      const healthBrakeCtx = healthBrakeCanvas ? healthBrakeCanvas.getContext('2d') : null;
+
+      // Helper function to draw analog gauge
+      function drawAnalogGauge(ctx, canvas, value, min, max, unit, color) {
+        if (!ctx || !canvas) return;
+        
+        const w = canvas.width = canvas.clientWidth || 60;
+        const h = canvas.height = canvas.clientHeight || 60;
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        const radius = Math.min(w, h) * 0.4;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw gauge background circle
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw gauge border
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Draw scale marks
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 10; i++) {
+          const angle = -Math.PI * 0.75 + (i / 10) * (Math.PI * 1.5);
+          const x1 = cx + Math.cos(angle) * (radius * 0.85);
+          const y1 = cy + Math.sin(angle) * (radius * 0.85);
+          const x2 = cx + Math.cos(angle) * (radius * 0.95);
+          const y2 = cy + Math.sin(angle) * (radius * 0.95);
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+
+        // Calculate needle angle
+        const normalized = THREE.MathUtils.clamp((value - min) / (max - min), 0, 1);
+        const needleAngle = -Math.PI * 0.75 + normalized * (Math.PI * 1.5);
+
+        // Draw needle
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(
+          cx + Math.cos(needleAngle) * (radius * 0.7),
+          cy + Math.sin(needleAngle) * (radius * 0.7)
+        );
+        ctx.stroke();
+
+        // Draw center dot
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       function drawCockpitInstruments() {
-        const hw = horizonCanvas.width = horizonCanvas.clientWidth || 120;
-        const hh = horizonCanvas.height = horizonCanvas.clientHeight || 96;
-        horizonCtx.save();
-        horizonCtx.clearRect(0, 0, hw, hh);
-        horizonCtx.translate(hw * 0.5, hh * 0.5);
-        horizonCtx.rotate(-state.roll);
-        const pitchOffset = THREE.MathUtils.clamp(state.pitch * 90, -35, 35);
+        if (horizonCanvas && horizonCtx) {
+          const hw = horizonCanvas.width = horizonCanvas.clientWidth || 120;
+          const hh = horizonCanvas.height = horizonCanvas.clientHeight || 96;
+          horizonCtx.save();
+          horizonCtx.clearRect(0, 0, hw, hh);
+          horizonCtx.translate(hw * 0.5, hh * 0.5);
+          horizonCtx.rotate(-state.roll);
+          const pitchOffset = THREE.MathUtils.clamp(state.pitch * 90, -35, 35);
 
-        horizonCtx.fillStyle = '#0284c7';
-        horizonCtx.fillRect(-hw, -hh * 2 + pitchOffset, hw * 2, hh * 2);
-        horizonCtx.fillStyle = '#78350f';
-        horizonCtx.fillRect(-hw, pitchOffset, hw * 2, hh * 2);
-        horizonCtx.strokeStyle = '#ffffff';
-        horizonCtx.lineWidth = 1.5;
-        horizonCtx.beginPath();
-        horizonCtx.moveTo(-hw, pitchOffset);
-        horizonCtx.lineTo(hw, pitchOffset);
-        horizonCtx.stroke();
-        horizonCtx.restore();
+          horizonCtx.fillStyle = '#0284c7';
+          horizonCtx.fillRect(-hw, -hh * 2 + pitchOffset, hw * 2, hh * 2);
+          horizonCtx.fillStyle = '#78350f';
+          horizonCtx.fillRect(-hw, pitchOffset, hw * 2, hh * 2);
+          horizonCtx.strokeStyle = '#ffffff';
+          horizonCtx.lineWidth = 1.5;
+          horizonCtx.beginPath();
+          horizonCtx.moveTo(-hw, pitchOffset);
+          horizonCtx.lineTo(hw, pitchOffset);
+          horizonCtx.stroke();
+          horizonCtx.restore();
 
-        horizonCtx.strokeStyle = '#facc15';
-        horizonCtx.lineWidth = 2;
-        horizonCtx.beginPath();
-        horizonCtx.moveTo(hw * 0.25, hh * 0.5);
-        horizonCtx.lineTo(hw * 0.42, hh * 0.5);
-        horizonCtx.moveTo(hw * 0.58, hh * 0.5);
-        horizonCtx.lineTo(hw * 0.75, hh * 0.5);
-        horizonCtx.stroke();
+          horizonCtx.strokeStyle = '#facc15';
+          horizonCtx.lineWidth = 2;
+          horizonCtx.beginPath();
+          horizonCtx.moveTo(hw * 0.25, hh * 0.5);
+          horizonCtx.lineTo(hw * 0.42, hh * 0.5);
+          horizonCtx.moveTo(hw * 0.58, hh * 0.5);
+          horizonCtx.lineTo(hw * 0.75, hh * 0.5);
+          horizonCtx.stroke();
+        }
 
-        document.getElementById('imu-pitch').textContent = `${THREE.MathUtils.radToDeg(state.pitch).toFixed(1)}°`;
-        document.getElementById('imu-roll').textContent = `${THREE.MathUtils.radToDeg(state.roll).toFixed(1)}°`;
-        document.getElementById('imu-yaw').textContent = `${THREE.MathUtils.radToDeg(state.heading).toFixed(1)}°`;
+        const imuPitchEl = document.getElementById('imu-pitch');
+        const imuRollEl = document.getElementById('imu-roll');
+        const imuYawEl = document.getElementById('imu-yaw');
+        if (imuPitchEl) imuPitchEl.textContent = `${THREE.MathUtils.radToDeg(state.pitch).toFixed(1)}°`;
+        if (imuRollEl) imuRollEl.textContent = `${THREE.MathUtils.radToDeg(state.roll).toFixed(1)}°`;
+        if (imuYawEl) imuYawEl.textContent = `${THREE.MathUtils.radToDeg(state.heading).toFixed(1)}°`;
 
-        const gw = gforceCanvas.width = gforceCanvas.clientWidth || 120;
-        const gh = gforceCanvas.height = gforceCanvas.clientHeight || 96;
-        const gcx = gw * 0.5;
-        const gcy = gh * 0.5;
-        const gRad = Math.min(gw, gh) * 0.42;
+        if (gforceCanvas && gforceCtx) {
+          const gw = gforceCanvas.width = gforceCanvas.clientWidth || 120;
+          const gh = gforceCanvas.height = gforceCanvas.clientHeight || 96;
+          const gcx = gw * 0.5;
+          const gcy = gh * 0.5;
+          const gRad = Math.min(gw, gh) * 0.42;
 
-        gforceCtx.clearRect(0, 0, gw, gh);
-        gforceCtx.strokeStyle = '#cbd5e1';
-        gforceCtx.lineWidth = 1;
-        [0.5, 1.0].forEach(r => {
+          gforceCtx.clearRect(0, 0, gw, gh);
+          gforceCtx.strokeStyle = '#cbd5e1';
+          gforceCtx.lineWidth = 1;
+          [0.5, 1.0].forEach(r => {
+            gforceCtx.beginPath();
+            gforceCtx.arc(gcx, gcy, gRad * r, 0, Math.PI * 2);
+            gforceCtx.stroke();
+          });
           gforceCtx.beginPath();
-          gforceCtx.arc(gcx, gcy, gRad * r, 0, Math.PI * 2);
+          gforceCtx.moveTo(gcx - gRad, gcy);
+          gforceCtx.lineTo(gcx + gRad, gcy);
+          gforceCtx.moveTo(gcx, gcy - gRad);
+          gforceCtx.lineTo(gcx, gcy + gRad);
           gforceCtx.stroke();
-        });
-        gforceCtx.beginPath();
-        gforceCtx.moveTo(gcx - gRad, gcy);
-        gforceCtx.lineTo(gcx + gRad, gcy);
-        gforceCtx.moveTo(gcx, gcy - gRad);
-        gforceCtx.lineTo(gcx, gcy + gRad);
-        gforceCtx.stroke();
 
-        const dotX = gcx + THREE.MathUtils.clamp(state.accelLat, -1.2, 1.2) * (gRad * 0.8);
-        const dotY = gcy - THREE.MathUtils.clamp(state.accelLon, -1.2, 1.2) * (gRad * 0.8);
-        gforceCtx.fillStyle = '#0284c7';
-        gforceCtx.beginPath();
-        gforceCtx.arc(dotX, dotY, 4.5, 0, Math.PI * 2);
-        gforceCtx.fill();
+          const dotX = gcx + THREE.MathUtils.clamp(state.accelLat, -1.2, 1.2) * (gRad * 0.8);
+          const dotY = gcy - THREE.MathUtils.clamp(state.accelLon, -1.2, 1.2) * (gRad * 0.8);
+          gforceCtx.fillStyle = '#0284c7';
+          gforceCtx.beginPath();
+          gforceCtx.arc(dotX, dotY, 4.5, 0, Math.PI * 2);
+          gforceCtx.fill();
+        }
 
         document.getElementById('imu-latg').textContent = `${state.accelLat.toFixed(2)}`;
         document.getElementById('imu-long').textContent = `${state.accelLon.toFixed(2)}`;
@@ -2386,6 +2592,96 @@
         document.getElementById('tele-spd').textContent = Math.abs(state.speed).toFixed(1);
         document.getElementById('tele-yaw').textContent = THREE.MathUtils.radToDeg(state.yawRate).toFixed(1);
         document.getElementById('tele-rpm').textContent = Math.round(Math.abs(state.speed) * 265);
+
+        updateVehicleDiagnostics();
+      }
+
+      function updateVehicleDiagnostics() {
+        const speedMPH = Math.abs(state.speed) * 2.237; // m/s to mph
+        const tyrePressure = 28 + (Math.sin(state.simTime * 0.3) * 4);
+        const engineHealth = 95 + (Math.sin(state.simTime * 0.15) * 5);
+        const fuelLevel = Math.max(20, 87 - (state.simTime * 0.05));
+        const brakeFluid = 85 + (Math.cos(state.simTime * 0.2) * 8);
+
+        // Get IMU values from main HUD
+        const pitchDeg = parseFloat(document.getElementById('imu-pitch')?.textContent || '0');
+        const rollDeg = parseFloat(document.getElementById('imu-roll')?.textContent || '0');
+        const yawDeg = parseFloat(document.getElementById('imu-yaw')?.textContent || '0');
+        const accelTotal = parseFloat(document.getElementById('accel-total')?.textContent || '1.0');
+
+        // Update IMU analog gauges (pitch & roll: -90 to +90 deg, yaw: 0 to 360 deg)
+        if (imuPitchCtx) drawAnalogGauge(imuPitchCtx, imuPitchCanvas, pitchDeg, -90, 90, '°', '#0ea5e9');
+        if (imuRollCtx) drawAnalogGauge(imuRollCtx, imuRollCanvas, rollDeg, -90, 90, '°', '#f97316');
+        
+        // Yaw gauge (0-360 deg compass)
+        if (imuYawCtx && imuYawCanvas) {
+          const w = imuYawCanvas.width = imuYawCanvas.clientWidth || 60;
+          const h = imuYawCanvas.height = imuYawCanvas.clientHeight || 60;
+          const cx = w * 0.5;
+          const cy = h * 0.5;
+          const radius = Math.min(w, h) * 0.4;
+          
+          imuYawCtx.clearRect(0, 0, w, h);
+          
+          // Compass background
+          imuYawCtx.fillStyle = '#f1f5f9';
+          imuYawCtx.beginPath();
+          imuYawCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+          imuYawCtx.fill();
+          imuYawCtx.strokeStyle = '#cbd5e1';
+          imuYawCtx.lineWidth = 1.5;
+          imuYawCtx.stroke();
+          
+          // Cardinal directions
+          imuYawCtx.fillStyle = '#1e293b';
+          imuYawCtx.font = 'bold 8px monospace';
+          imuYawCtx.textAlign = 'center';
+          imuYawCtx.textBaseline = 'middle';
+          const labels = ['N', 'E', 'S', 'W'];
+          const angles = [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5];
+          labels.forEach((label, i) => {
+            const x = cx + Math.cos(angles[i]) * (radius * 0.65);
+            const y = cy + Math.sin(angles[i]) * (radius * 0.65);
+            imuYawCtx.fillText(label, x, y);
+          });
+          
+          // Yaw needle (red)
+          const yawRad = THREE.MathUtils.degToRad(yawDeg);
+          imuYawCtx.strokeStyle = '#dc2626';
+          imuYawCtx.lineWidth = 2.5;
+          imuYawCtx.beginPath();
+          imuYawCtx.moveTo(cx, cy);
+          imuYawCtx.lineTo(
+            cx + Math.cos(yawRad - Math.PI * 0.5) * (radius * 0.7),
+            cy + Math.sin(yawRad - Math.PI * 0.5) * (radius * 0.7)
+          );
+          imuYawCtx.stroke();
+          
+          // Center dot
+          imuYawCtx.fillStyle = '#dc2626';
+          imuYawCtx.beginPath();
+          imuYawCtx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+          imuYawCtx.fill();
+        }
+
+        // Update accelerometer gauge (0-5G)
+        if (accelGaugeCtx) drawAnalogGauge(accelGaugeCtx, accelGaugeCanvas, accelTotal, 0, 5, 'G', '#ef4444');
+
+        // Update vehicle health gauges
+        if (healthTyreCtx) drawAnalogGauge(healthTyreCtx, healthTyreCanvas, tyrePressure, 20, 35, 'PSI', '#0ea5e9');
+        if (healthEngineCtx) drawAnalogGauge(healthEngineCtx, healthEngineCanvas, engineHealth, 0, 100, '%', '#10b981');
+        if (healthFuelCtx) drawAnalogGauge(healthFuelCtx, healthFuelCanvas, fuelLevel, 0, 100, '%', '#a855f7');
+        if (healthBrakeCtx) drawAnalogGauge(healthBrakeCtx, healthBrakeCanvas, brakeFluid, 0, 100, '%', '#ec4899');
+
+        // Update text values
+        document.getElementById('imu-pitch-val').textContent = pitchDeg.toFixed(1);
+        document.getElementById('imu-roll-val').textContent = rollDeg.toFixed(1);
+        document.getElementById('imu-yaw-val').textContent = Math.round(yawDeg);
+        document.getElementById('accel-total-val').textContent = accelTotal.toFixed(1);
+        document.getElementById('health-tyre-val').textContent = tyrePressure.toFixed(1);
+        document.getElementById('health-engine-val').textContent = engineHealth.toFixed(0);
+        document.getElementById('health-fuel-val').textContent = fuelLevel.toFixed(1);
+        document.getElementById('health-brake-val').textContent = brakeFluid.toFixed(0);
       }
 
       function setGearUI(g) {
@@ -2654,6 +2950,55 @@
           navCamera.updateProjectionMatrix();
           navRenderer.setSize(navCubeContainer.clientWidth, navCubeContainer.clientHeight);
         }
+      });
+
+      // =========================================================================
+      // 11A. SERVICES & BIDDING SYSTEM
+      // =========================================================================
+      const bidModal = document.getElementById('bid-modal');
+      const bidServiceInput = document.getElementById('bid-service');
+      const bidCurrencySelect = document.getElementById('bid-currency');
+      const bidPriceInput = document.getElementById('bid-price');
+      const bidDurationSelect = document.getElementById('bid-duration');
+
+      document.querySelectorAll('.services-bid').forEach((btn, idx) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const serviceCard = btn.closest('[class*="gradient"]');
+          const serviceType = serviceCard.querySelector('[class*="font-bold"]').textContent;
+          bidServiceInput.value = serviceType;
+          bidModal.classList.remove('hidden');
+          bidPriceInput.focus();
+        });
+      });
+
+      document.getElementById('bid-cancel').addEventListener('click', () => {
+        bidModal.classList.add('hidden');
+      });
+
+      document.getElementById('bid-submit').addEventListener('click', () => {
+        const service = bidServiceInput.value;
+        const currency = bidCurrencySelect.value;
+        const price = parseFloat(bidPriceInput.value);
+        const duration = bidDurationSelect.value;
+
+        if (!price || price <= 0) {
+          alert('Please enter a valid price');
+          return;
+        }
+
+        const durationLabel = { '1': '1hr', '2': '2hrs', '24': '1day', '7': '7days' }[duration];
+        addTelemetryLog('SONAR', `Service Bid: ${service} @ ${price} ${currency} for ${durationLabel} • Contract auto-locked`);
+        bidModal.classList.add('hidden');
+        bidPriceInput.value = '';
+      });
+
+      bidModal.addEventListener('click', (e) => {
+        if (e.target === bidModal) bidModal.classList.add('hidden');
+      });
+
+      document.getElementById('services-refresh').addEventListener('click', () => {
+        addTelemetryLog('SONAR', 'Service feed refreshed • 3 bids available');
       });
 
       // =========================================================================
