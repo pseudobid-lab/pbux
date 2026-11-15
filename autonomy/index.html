@@ -480,6 +480,15 @@
               <button type="button" data-terrain="RAINY" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">RAINY</button>
               <button type="button" data-terrain="DESERT" class="terrain-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">DESERT</button>
             </div>
+
+            <div class="flex flex-nowrap items-center gap-1">
+              <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 mr-1 whitespace-nowrap">CIRCUIT:</span>
+              <button type="button" data-circuit="OVAL" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-sky-600 text-white cursor-pointer hover:bg-sky-700 whitespace-nowrap">OVAL</button>
+              <button type="button" data-circuit="RECTANGLE" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">RECT</button>
+              <button type="button" data-circuit="FIGURE8" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">8</button>
+              <button type="button" data-circuit="TRIANGLE" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">TRI</button>
+              <button type="button" data-circuit="COMPACT" class="circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap">SMALL</button>
+            </div>
             
             <div class="flex items-center gap-1.5">
               <span class="text-[9px] font-extrabold uppercase tracking-wider text-slate-500 whitespace-nowrap">OBSTACLES:</span>
@@ -822,19 +831,84 @@
       // =========================================================================
       // 3. CLOSED-LOOP ROAD SPLINE & BOUNDARY GEOMETRY HELPERS
       // =========================================================================
-      const ROAD_WAYPOINTS = [
-        new THREE.Vector3(-55, 0, -45),
-        new THREE.Vector3(0,   0, -52),
-        new THREE.Vector3(58,  0, -42),
-        new THREE.Vector3(75,  0,  0),
-        new THREE.Vector3(55,  0,  46),
-        new THREE.Vector3(0,   0,  54),
-        new THREE.Vector3(-56, 0,  42),
-        new THREE.Vector3(-74, 0,  0)
-      ];
-      const roadCurve = new THREE.CatmullRomCurve3(ROAD_WAYPOINTS, true, 'catmullrom', 0.5);
+      const CIRCUIT_SHAPES = {
+        OVAL: [
+          new THREE.Vector3(-80, 0, -60),
+          new THREE.Vector3(-40, 0, -75),
+          new THREE.Vector3(0,   0, -80),
+          new THREE.Vector3(40,  0, -75),
+          new THREE.Vector3(80,  0, -60),
+          new THREE.Vector3(95,  0, -20),
+          new THREE.Vector3(95,  0,  20),
+          new THREE.Vector3(80,  0,  60),
+          new THREE.Vector3(40,  0,  75),
+          new THREE.Vector3(0,   0,  80),
+          new THREE.Vector3(-40, 0,  75),
+          new THREE.Vector3(-80, 0,  60),
+          new THREE.Vector3(-95, 0,  20),
+          new THREE.Vector3(-95, 0, -20)
+        ],
+        RECTANGLE: [
+          new THREE.Vector3(-70, 0, -70),
+          new THREE.Vector3(70,  0, -70),
+          new THREE.Vector3(90,  0, -50),
+          new THREE.Vector3(90,  0,  50),
+          new THREE.Vector3(70,  0,  70),
+          new THREE.Vector3(-70, 0,  70),
+          new THREE.Vector3(-90, 0,  50),
+          new THREE.Vector3(-90, 0, -50)
+        ],
+        FIGURE8: [
+          new THREE.Vector3(-60, 0, -50),
+          new THREE.Vector3(-30, 0, -70),
+          new THREE.Vector3(0,   0, -60),
+          new THREE.Vector3(30,  0, -70),
+          new THREE.Vector3(60,  0, -50),
+          new THREE.Vector3(70,  0, -20),
+          new THREE.Vector3(60,  0,  0),
+          new THREE.Vector3(70,  0,  20),
+          new THREE.Vector3(60,  0,  50),
+          new THREE.Vector3(30,  0,  70),
+          new THREE.Vector3(0,   0,  60),
+          new THREE.Vector3(-30, 0,  70),
+          new THREE.Vector3(-60, 0,  50),
+          new THREE.Vector3(-70, 0,  20),
+          new THREE.Vector3(-60, 0,  0),
+          new THREE.Vector3(-70, 0, -20)
+        ],
+        TRIANGLE: [
+          new THREE.Vector3(0,   0, -80),
+          new THREE.Vector3(80,  0,  60),
+          new THREE.Vector3(-80, 0,  60),
+          new THREE.Vector3(-40, 0, -70),
+          new THREE.Vector3(40,  0, -70)
+        ],
+        COMPACT: [
+          new THREE.Vector3(-55, 0, -45),
+          new THREE.Vector3(0,   0, -52),
+          new THREE.Vector3(58,  0, -42),
+          new THREE.Vector3(75,  0,  0),
+          new THREE.Vector3(55,  0,  46),
+          new THREE.Vector3(0,   0,  54),
+          new THREE.Vector3(-56, 0,  42),
+          new THREE.Vector3(-74, 0,  0)
+        ]
+      };
+      
+      let currentCircuitShape = 'OVAL';
+      let ROAD_WAYPOINTS = CIRCUIT_SHAPES['OVAL'];
+      let roadCurve = new THREE.CatmullRomCurve3(ROAD_WAYPOINTS, true, 'catmullrom', 0.5);
       const ROAD_WIDTH = 8.6;
       const SAFE_LANE_HALF_WIDTH = 3.1;
+
+      function switchCircuit(shapeName) {
+        if (!CIRCUIT_SHAPES[shapeName]) return;
+        currentCircuitShape = shapeName;
+        ROAD_WAYPOINTS = CIRCUIT_SHAPES[shapeName];
+        roadCurve = new THREE.CatmullRomCurve3(ROAD_WAYPOINTS, true, 'catmullrom', 0.5);
+        updateRoadGeometry();
+        updateBoundaryGeometry();
+      }
 
       function getClosestRoadInfo(x, z) {
         let bestT = 0;
@@ -2934,6 +3008,23 @@
               : 'terrain-btn px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer';
           });
           addTelemetryLog('IMU', `Environment switched to ${state.terrain} (Grip ${(prof.grip * 100).toFixed(0)}%)`);
+        });
+      });
+
+      document.querySelectorAll('.circuit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const circuitType = btn.dataset.circuit;
+          switchCircuit(circuitType);
+          state.pos.set(0, getTerrainHeight(0, -52), -52);
+          state.heading = Math.PI * 0.5;
+          state.trackProgress = 0;
+
+          document.querySelectorAll('.circuit-btn').forEach(b => {
+            b.className = b.dataset.circuit === circuitType
+              ? 'circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-sky-600 text-white cursor-pointer hover:bg-sky-700 whitespace-nowrap'
+              : 'circuit-btn px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer whitespace-nowrap';
+          });
+          addTelemetryLog('TRACK', `Circuit changed to ${circuitType}`);
         });
       });
 
