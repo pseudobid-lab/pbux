@@ -484,36 +484,36 @@
           </div>
         </div>
 
-        <!-- Bottom-Right HUD: Radial Speedometer & Cruise Status -->
-        <div class="absolute bottom-2.5 right-2.5 pointer-events-auto">
-          <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg flex flex-col items-center">
-            <div class="relative w-24 h-16 flex items-center justify-center">
+        <!-- Bottom-Right HUD: Radial Speedometer & Cruise Status (Fixed Size) -->
+        <div class="absolute bottom-2.5 right-2.5 pointer-events-auto w-32 h-32">
+          <div class="glass-hud rounded-xl border border-slate-300/90 p-2 shadow-lg flex flex-col items-center h-full justify-center">
+            <div class="relative w-24 h-16 flex items-center justify-center shrink-0">
               <canvas id="canvas-speedo" width="120" height="80" class="w-full h-full"></canvas>
               <div class="absolute bottom-0.5 flex flex-col items-center leading-none">
                 <span id="hud-speed-kmh" class="text-base font-mono-tech font-extrabold text-slate-900">0</span>
                 <span class="text-[8px] font-bold text-slate-500">KM/H</span>
               </div>
             </div>
-            <div id="hud-cruise-badge" class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-[9px] font-mono-tech font-extrabold text-emerald-800">
+            <div id="hud-cruise-badge" class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 border border-emerald-300 text-[8px] font-mono-tech font-bold text-emerald-800 shrink-0 whitespace-nowrap">
               <span id="hud-cruise-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-              <span id="hud-cruise-text">CRUISE OPT: MAX SPEED</span>
+              <span id="hud-cruise-text">CRUISE OPT</span>
             </div>
           </div>
         </div>
 
-        <!-- Top-Right HUD: Signal Indicator Feed -->
-        <div class="absolute top-28 right-2.5 pointer-events-auto">
-          <div class="glass-hud rounded-lg border border-slate-300/90 p-2 shadow-lg flex flex-col gap-1">
-            <div class="bg-slate-900 px-2 py-1.5 rounded-lg flex flex-col gap-1 border border-slate-700">
-              <span id="hud-sig-red" class="w-2 h-2 rounded-full bg-red-950 transition-all"></span>
-              <span id="hud-sig-yellow" class="w-2 h-2 rounded-full bg-amber-950 transition-all"></span>
-              <span id="hud-sig-green" class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] transition-all"></span>
+        <!-- Top-Center HUD: Signal Indicator Feed (Fixed Size) -->
+        <div class="absolute top-2.5 left-1/2 transform -translate-x-1/2 pointer-events-auto w-40 h-24">
+          <div class="glass-hud rounded-lg border border-slate-300/90 p-2 shadow-lg flex flex-col gap-1 h-full justify-center">
+            <div class="bg-slate-900 px-2 py-1 rounded-lg flex flex-row gap-2 items-center border border-slate-700 shrink-0">
+              <span id="hud-sig-red" class="w-2.5 h-2.5 rounded-full bg-red-950 transition-all shrink-0"></span>
+              <span id="hud-sig-yellow" class="w-2.5 h-2.5 rounded-full bg-amber-950 transition-all shrink-0"></span>
+              <span id="hud-sig-green" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] transition-all shrink-0"></span>
             </div>
-            <div class="text-[9px] font-mono-tech">
-              <div class="font-extrabold text-slate-900" id="hud-sig-label">SIGNAL: GREEN</div>
-              <div class="text-slate-600 font-semibold text-[8px]" id="hud-sig-dist">NEXT: 45.0m</div>
-              <button id="btn-cycle-signal" type="button" class="mt-0.5 px-1.5 py-0.5 rounded bg-slate-800 text-white text-[8px] font-bold hover:bg-slate-700 transition cursor-pointer">
-                CYCLE LIGHT
+            <div class="text-[8px] font-mono-tech">
+              <div class="font-extrabold text-slate-900 whitespace-nowrap" id="hud-sig-label">SIGNAL: GREEN</div>
+              <div class="text-slate-600 font-semibold text-[7px] whitespace-nowrap" id="hud-sig-dist">NEXT: 45.0m</div>
+              <button id="btn-cycle-signal" type="button" class="mt-0.5 px-1 py-0.5 rounded bg-slate-800 text-white text-[7px] font-bold hover:bg-slate-700 transition cursor-pointer shrink-0 whitespace-nowrap">
+                CYCLE
               </button>
             </div>
           </div>
