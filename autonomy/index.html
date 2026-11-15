@@ -256,151 +256,10 @@
         <div id="camera-grid" class="grid grid-cols-2 gap-1.5"></div>
       </div>
 
-      <!-- Inline Services Feed with Collapsible Popup -->
-      <div class="bg-white rounded-lg border border-slate-200 shadow-xs">
-        <div class="flex items-center justify-between px-2 py-1.5 border-b border-slate-200">
-          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700">Nearby Services & Attractions</h3>
-          <div class="flex gap-1">
-            <button id="services-prefs" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition cursor-pointer">⚙️ PREFS</button>
-            <button id="services-toggle" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">▼</button>
-          </div>
-        </div>
+    </section>
 
-        <!-- Inline Compact Feed (Always Visible) -->
-        <div id="services-inline" class="px-2 py-1.5 space-y-1 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
-          <div id="inline-services-list" class="space-y-1">
-            <div class="flex items-center gap-1 bg-white rounded p-1 border border-amber-100 hover:border-amber-300 transition cursor-pointer">
-              <span class="text-[7px] font-bold bg-amber-100 text-amber-700 px-1 rounded">🅿️ 0.3mi</span>
-              <span class="text-[7px] font-mono-tech text-slate-700 flex-1">Parking • $2.50/hr</span>
-              <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700">BID</button>
-            </div>
-            <div class="flex items-center gap-1 bg-white rounded p-1 border border-emerald-100 hover:border-emerald-300 transition cursor-pointer">
-              <span class="text-[7px] font-bold bg-emerald-100 text-emerald-700 px-1 rounded">☕ 0.8mi</span>
-              <span class="text-[7px] font-mono-tech text-slate-700 flex-1">Starbucks • 4.8★</span>
-              <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700">BID</button>
-            </div>
-            <div class="flex items-center gap-1 bg-white rounded p-1 border border-blue-100 hover:border-blue-300 transition cursor-pointer">
-              <span class="text-[7px] font-bold bg-blue-100 text-blue-700 px-1 rounded">🏈 1.2mi</span>
-              <span class="text-[7px] font-mono-tech text-slate-700 flex-1">NFL Game • Arrival in 8min</span>
-              <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700">INFO</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Collapsible Detailed Feed -->
-        <div id="services-popup" class="hidden border-t border-slate-200">
-          <div class="px-2 py-1.5 max-h-48 overflow-y-auto space-y-1.5">
-            <div id="services-list">
-              <!-- Parking Service -->
-              <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded p-1.5 border border-amber-200 hover:border-amber-400 transition">
-                <div class="flex items-start justify-between gap-1 mb-0.5">
-                  <div class="flex-1">
-                    <div class="text-[8px] font-bold text-slate-800">🅿️ Parking</div>
-                    <div class="text-[7px] text-slate-600">Lowest rate near target (0.3km)</div>
-                    <div class="text-[7px] font-mono-tech text-amber-700 font-bold mt-0.5">$2.50/hr • 4★ • 3min walk</div>
-                  </div>
-                  <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 cursor-pointer whitespace-nowrap">BID</button>
-                </div>
-                <div class="text-[6px] text-slate-500">ETH 0.0012 • Slot: 2hrs • Auto-contract</div>
-              </div>
-
-              <!-- Lodging Service -->
-              <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded p-1.5 border border-violet-200 hover:border-violet-400 transition">
-                <div class="flex items-start justify-between gap-1 mb-0.5">
-                  <div class="flex-1">
-                    <div class="text-[8px] font-bold text-slate-800">🏨 Lodging</div>
-                    <div class="text-[7px] text-slate-600">Business conference suite nearby</div>
-                    <div class="text-[7px] font-mono-tech text-violet-700 font-bold mt-0.5">$89/night • 5★ • WiFi+WiFi</div>
-                  </div>
-                  <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-violet-600 text-white hover:bg-violet-700 cursor-pointer whitespace-nowrap">BID</button>
-                </div>
-                <div class="text-[6px] text-slate-500">ETH 0.045 • Checkin: 16:00 • Auto-contract</div>
-              </div>
-
-              <!-- Starbucks Service -->
-              <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded p-1.5 border border-emerald-200 hover:border-emerald-400 transition">
-                <div class="flex items-start justify-between gap-1 mb-0.5">
-                  <div class="flex-1">
-                    <div class="text-[8px] font-bold text-slate-800">☕ Starbucks</div>
-                    <div class="text-[7px] text-slate-600">Nearest location (0.8km)</div>
-                    <div class="text-[7px] font-mono-tech text-emerald-700 font-bold mt-0.5">Order ahead • 4.8★ • Drive-thru</div>
-                  </div>
-                  <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer whitespace-nowrap">BID</button>
-                </div>
-                <div class="text-[6px] text-slate-500">USDC 5.75 • Pickup: 10min • Auto-contract</div>
-              </div>
-
-              <!-- Dynamic Attraction Feed -->
-              <div id="attractions-container" class="space-y-1.5"></div>
-            </div>
-
-            <div class="flex gap-1 justify-between pt-1 border-t border-slate-200">
-              <button id="services-refresh" class="flex-1 text-[7px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">REFRESH FEED</button>
-              <button id="services-refresh-attractions" class="flex-1 text-[7px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition cursor-pointer">NEARBY EVENTS</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Preferences Modal -->
-      <div id="prefs-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg max-h-96 overflow-y-auto">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800">Attraction Preferences</h3>
-            <button id="prefs-close" class="text-[12px] text-slate-500 hover:text-slate-700 cursor-pointer">✕</button>
-          </div>
-          <div class="space-y-1.5 text-[8px]">
-            <div class="space-y-1">
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-sports" class="attraction-pref w-3 h-3" data-category="sports" />
-                <span class="font-bold">🏈 Sports Events (NFL, NBA, MLB)</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-dining" class="attraction-pref w-3 h-3" data-category="dining" checked />
-                <span class="font-bold">🍽️ Dining & Restaurants</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-coffee" class="attraction-pref w-3 h-3" data-category="coffee" checked />
-                <span class="font-bold">☕ Coffee & Cafes</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-events" class="attraction-pref w-3 h-3" data-category="events" />
-                <span class="font-bold">🎭 Entertainment & Shows</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-shopping" class="attraction-pref w-3 h-3" data-category="shopping" />
-                <span class="font-bold">🛍️ Shopping & Malls</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-gas" class="attraction-pref w-3 h-3" data-category="gas" checked />
-                <span class="font-bold">⛽ Gas Stations & EV Charging</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-lodging" class="attraction-pref w-3 h-3" data-category="lodging" checked />
-                <span class="font-bold">🏨 Hotels & Lodging</span>
-              </label>
-              <label class="flex items-center gap-2 p-1.5 rounded border border-slate-200 hover:border-sky-300 cursor-pointer">
-                <input type="checkbox" id="pref-parking" class="attraction-pref w-3 h-3" data-category="parking" checked />
-                <span class="font-bold">🅿️ Parking & Garages</span>
-              </label>
-            </div>
-            <div class="border-t border-slate-200 pt-1.5">
-              <label class="text-[7px] font-bold text-slate-700 block mb-1">Search Radius</label>
-              <div class="flex items-center gap-1">
-                <input type="range" id="pref-radius" min="0.5" max="5" step="0.5" value="2" class="flex-1" />
-                <span id="radius-display" class="font-mono-tech font-bold text-slate-600 min-w-[30px]">2.0 mi</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex gap-1 mt-2 pt-2 border-t border-slate-200">
-            <button id="prefs-save" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700 cursor-pointer">SAVE</button>
-            <button id="prefs-reset" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 cursor-pointer">RESET</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bid Input Modal -->
-      <div id="bid-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <!-- Bid Input Modal -->
+    <div id="bid-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg">
           <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800 mb-2">Place Bid</h3>
           <div class="space-y-2 text-[8px]">
@@ -435,6 +294,52 @@
         </div>
       </div>
 
+      <!-- Preferences Modal -->
+      <div id="prefs-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-3 max-w-sm w-full shadow-lg max-h-96 overflow-y-auto">
+          <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-800 mb-2">Service Preferences</h3>
+          <div class="space-y-2 text-[8px]">
+            <div class="pb-2 border-b border-slate-200">
+              <label class="block font-bold text-slate-700 mb-1">Search Radius (miles)</label>
+              <input id="prefs-radius" type="range" min="0.5" max="5" step="0.5" value="2" class="w-full" />
+              <div class="text-[7px] text-slate-600 mt-0.5">Range: <span id="prefs-radius-value">2.0</span> miles</div>
+            </div>
+
+            <div class="pb-2 border-b border-slate-200">
+              <label class="block font-bold text-slate-700 mb-1">Categories</label>
+              <div class="space-y-1">
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-sports" class="w-3 h-3" checked /> <span>🏈 Sports Events</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-dining" class="w-3 h-3" checked /> <span>🍽️ Dining</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-coffee" class="w-3 h-3" checked /> <span>☕ Coffee</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-shopping" class="w-3 h-3" /> <span>🛍️ Shopping</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-gas" class="w-3 h-3" checked /> <span>⛽ Gas Stations</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-lodging" class="w-3 h-3" checked /> <span>🏨 Lodging</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                  <input type="checkbox" id="prefs-parking" class="w-3 h-3" checked /> <span>🅿️ Parking</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex gap-1 mt-2">
+              <button id="prefs-cancel" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-slate-200 text-slate-800 hover:bg-slate-300 cursor-pointer">CLOSE</button>
+              <button id="prefs-save" class="flex-1 text-[7px] font-bold px-2 py-1 rounded bg-purple-600 text-white hover:bg-purple-700 cursor-pointer">SAVE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- MIDDLE PANE (6 COLS): 3D WORLD VIEWPORT & VEHICLE COCKPIT CONTROLS -->
@@ -464,8 +369,90 @@
           </div>
         </div>
 
-        <!-- Top-Right HUD: Interactive Traffic Light Status & Proximity Indicator -->
-        <div class="absolute top-2.5 right-2.5 glass-hud rounded-xl border border-slate-300/90 p-2 shadow-xs flex items-center gap-2.5">
+        <!-- Nearby Services & Attractions Overlay (Center-Left) -->
+        <div class="absolute left-2.5 top-32 w-72 max-h-96 pointer-events-auto">
+          <div class="bg-white rounded-lg border border-slate-300 shadow-lg overflow-hidden">
+            <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-slate-50">
+              <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-700">🚗 Nearby Services</h3>
+              <div class="flex gap-1">
+                <button id="services-prefs" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition cursor-pointer">⚙️</button>
+                <button id="services-toggle" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">▼</button>
+              </div>
+            </div>
+
+            <!-- Inline Compact Feed -->
+            <div id="services-inline" class="px-2 py-1.5 space-y-1 border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white max-h-32 overflow-y-auto">
+              <div id="inline-services-list" class="space-y-1">
+                <div class="flex items-center gap-1 bg-white rounded p-1 border border-amber-100 hover:border-amber-300 transition cursor-pointer">
+                  <span class="text-[7px] font-bold bg-amber-100 text-amber-700 px-1 rounded">🅿️ 0.3mi</span>
+                  <span class="text-[7px] font-mono-tech text-slate-700 flex-1 truncate">Parking • $2.50/hr</span>
+                  <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 shrink-0">BID</button>
+                </div>
+                <div class="flex items-center gap-1 bg-white rounded p-1 border border-emerald-100 hover:border-emerald-300 transition cursor-pointer">
+                  <span class="text-[7px] font-bold bg-emerald-100 text-emerald-700 px-1 rounded">☕ 0.8mi</span>
+                  <span class="text-[7px] font-mono-tech text-slate-700 flex-1 truncate">Starbucks • 4.8★</span>
+                  <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 shrink-0">BID</button>
+                </div>
+                <div class="flex items-center gap-1 bg-white rounded p-1 border border-blue-100 hover:border-blue-300 transition cursor-pointer">
+                  <span class="text-[7px] font-bold bg-blue-100 text-blue-700 px-1 rounded">🏈 1.2mi</span>
+                  <span class="text-[7px] font-mono-tech text-slate-700 flex-1 truncate">NFL Game • ETA 8min</span>
+                  <button class="services-bid text-[6px] font-bold px-1 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700 shrink-0">INFO</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Collapsible Detailed Feed -->
+            <div id="services-popup" class="hidden border-t border-slate-200 bg-white">
+              <div class="px-2 py-1.5 max-h-64 overflow-y-auto space-y-1">
+                <div id="services-list">
+                  <!-- Parking Service -->
+                  <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded p-1 border border-amber-200 hover:border-amber-400 transition">
+                    <div class="flex items-start justify-between gap-1">
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[8px] font-bold text-slate-800">🅿️ Parking</div>
+                        <div class="text-[7px] text-slate-600 truncate">Lowest rate (0.3km)</div>
+                        <div class="text-[7px] font-mono-tech text-amber-700 font-bold">$2.50/hr • 4★</div>
+                      </div>
+                      <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 cursor-pointer whitespace-nowrap shrink-0">BID</button>
+                    </div>
+                  </div>
+
+                  <!-- Lodging Service -->
+                  <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded p-1 border border-violet-200 hover:border-violet-400 transition">
+                    <div class="flex items-start justify-between gap-1">
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[8px] font-bold text-slate-800">🏨 Lodging</div>
+                        <div class="text-[7px] text-slate-600 truncate">Conference suite</div>
+                        <div class="text-[7px] font-mono-tech text-violet-700 font-bold">$89/night • 5★</div>
+                      </div>
+                      <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-violet-600 text-white hover:bg-violet-700 cursor-pointer whitespace-nowrap shrink-0">BID</button>
+                    </div>
+                  </div>
+
+                  <!-- Starbucks Service -->
+                  <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded p-1 border border-emerald-200 hover:border-emerald-400 transition">
+                    <div class="flex items-start justify-between gap-1">
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[8px] font-bold text-slate-800">☕ Starbucks</div>
+                        <div class="text-[7px] text-slate-600 truncate">Nearest (0.8km)</div>
+                        <div class="text-[7px] font-mono-tech text-emerald-700 font-bold">Drive-thru • 4.8★</div>
+                      </div>
+                      <button class="services-bid text-[7px] font-bold px-1 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer whitespace-nowrap shrink-0">BID</button>
+                    </div>
+                  </div>
+
+                  <!-- Dynamic Attraction Feed -->
+                  <div id="attractions-container" class="space-y-1"></div>
+                </div>
+
+                <div class="flex gap-1 justify-between pt-1 border-t border-slate-200">
+                  <button id="services-refresh" class="flex-1 text-[7px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-200 transition cursor-pointer">REFRESH</button>
+                  <button id="services-refresh-attractions" class="flex-1 text-[7px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition cursor-pointer">EVENTS</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
           <div class="bg-slate-900 px-1.5 py-1.5 rounded-lg flex flex-col gap-1 border border-slate-700">
             <span id="hud-sig-red" class="w-3 h-3 rounded-full bg-red-950 transition-all"></span>
             <span id="hud-sig-yellow" class="w-3 h-3 rounded-full bg-amber-950 transition-all"></span>
@@ -3104,19 +3091,17 @@
 
       let userPrefs = loadPreferences();
 
-      // Update radius display
-      document.getElementById('pref-radius').addEventListener('input', (e) => {
-        document.getElementById('radius-display').textContent = e.target.value + ' mi';
-      });
-
       // Load preferences into UI
       function loadPrefsUI() {
         Object.keys(userPrefs.categories).forEach(cat => {
-          const checkbox = document.getElementById(`pref-${cat}`);
+          const checkbox = document.getElementById(`prefs-${cat}`);
           if (checkbox) checkbox.checked = userPrefs.categories[cat];
         });
-        document.getElementById('pref-radius').value = userPrefs.radius;
-        document.getElementById('radius-display').textContent = userPrefs.radius + ' mi';
+        const radiusInput = document.getElementById('prefs-radius');
+        if (radiusInput) {
+          radiusInput.value = userPrefs.radius;
+          document.getElementById('prefs-radius-value').textContent = userPrefs.radius;
+        }
       }
       loadPrefsUI();
 
@@ -3126,33 +3111,30 @@
         prefsModal.classList.remove('hidden');
       });
 
-      document.getElementById('prefs-close').addEventListener('click', () => {
+      document.getElementById('prefs-cancel').addEventListener('click', () => {
         prefsModal.classList.add('hidden');
       });
 
       document.getElementById('prefs-save').addEventListener('click', () => {
         userPrefs.categories = {};
-        document.querySelectorAll('.attraction-pref').forEach(checkbox => {
-          userPrefs.categories[checkbox.dataset.category] = checkbox.checked;
+        document.querySelectorAll('#prefs-modal input[type="checkbox"]').forEach(checkbox => {
+          const category = checkbox.id.replace('prefs-', '');
+          userPrefs.categories[category] = checkbox.checked;
         });
-        userPrefs.radius = parseFloat(document.getElementById('pref-radius').value);
+        userPrefs.radius = parseFloat(document.getElementById('prefs-radius').value);
         savePreferences(userPrefs);
         prefsModal.classList.add('hidden');
         addTelemetryLog('SONAR', `Preferences saved • ${Object.values(userPrefs.categories).filter(v => v).length} categories enabled`);
         generateAttractionsFeed();
       });
 
-      document.getElementById('prefs-reset').addEventListener('click', () => {
-        userPrefs = {
-          categories: { sports: false, dining: true, coffee: true, events: false, shopping: false, gas: true, lodging: true, parking: true },
-          radius: 2.0
-        };
-        savePreferences(userPrefs);
-        loadPrefsUI();
-      });
-
       prefsModal.addEventListener('click', (e) => {
         if (e.target === prefsModal) prefsModal.classList.add('hidden');
+      });
+
+      // Update radius display when slider moves
+      document.getElementById('prefs-radius').addEventListener('input', (e) => {
+        document.getElementById('prefs-radius-value').textContent = e.target.value;
       });
 
       // Generate attractions feed based on preferences
